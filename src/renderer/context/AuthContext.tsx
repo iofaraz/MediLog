@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 
 interface User {
   id: string;
@@ -34,6 +35,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (username: string, password: string) => {
+    // Guard: window.api is only available inside Electron (not plain browser)
+    if (!window.api?.auth?.login) {
+      return { success: false, error: 'API bridge unavailable. Please restart the app.' };
+    }
     const result = await window.api.auth.login(username, password);
     if (result.success && result.user) {
       setUser(result.user);

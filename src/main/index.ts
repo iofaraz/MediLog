@@ -1,18 +1,23 @@
 import { app, BrowserWindow } from 'electron';
 import { join } from 'path';
+import { registerAuthHandlers } from './ipc/auth';
+import { AuthService } from './services/AuthService';
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1200,
+    height: 760,
+    minWidth: 900,
+    minHeight: 600,
     show: false,
     autoHideMenuBar: true,
+    frame: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
       contextIsolation: true,
-      nodeIntegration: false
-    }
+      nodeIntegration: false,
+    },
   });
 
   mainWindow.on('ready-to-show', () => {
@@ -26,7 +31,13 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Register all IPC handlers before window creation
+  registerAuthHandlers();
+
+  // Setup default admin user if not present
+  await AuthService.setupDefaultAdmin();
+
   createWindow();
 
   app.on('activate', function () {

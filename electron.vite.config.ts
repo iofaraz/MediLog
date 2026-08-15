@@ -7,29 +7,21 @@ export default defineConfig({
     build: {
       rollupOptions: {
         input: {
-          index: resolve(__dirname, 'src/main/index.ts')
-        }
-      }
-    }
+          index: resolve(__dirname, 'src/main/index.ts'),
+        },
+      },
+    },
   },
   preload: {
     build: {
       rollupOptions: {
         input: {
-          index: resolve(__dirname, 'src/preload/index.ts')
-        }
-      }
-    }
+          index: resolve(__dirname, 'src/preload/index.ts'),
+        },
+      },
+    },
   },
   renderer: {
-    root: '.',
-    build: {
-      rollupOptions: {
-        input: {
-          index: resolve(__dirname, 'index.html')
-        }
-      }
-    },
-    plugins: [react()]
-  }
+    plugins: [react()],
+  },
 });

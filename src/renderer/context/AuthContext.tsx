@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (username: string, password: string) => {
-    const result = await (window as any).api.auth.login(username, password);
+    const result = await window.api.auth.login(username, password);
     if (result.success && result.user) {
       setUser(result.user);
       sessionStorage.setItem('medilog_user', JSON.stringify(result.user));

@@ -1,11 +1,26 @@
 import { db } from '../db';
 import { visits, prescriptions, users } from '../db/schema';
 import { eq, desc } from 'drizzle-orm';
+import crypto from 'crypto';
+
+interface CreateVisitData {
+  patientId: string;
+  doctorId: string;
+  date: string;
+  reason?: string;
+  notes?: string;
+  diagnosis?: string;
+}
+
+interface UpdateVisitData {
+  reason?: string;
+  notes?: string;
+  diagnosis?: string;
+}
 
 export class VisitService {
   static async getVisitsByPatient(patientId: string) {
     try {
-      // Get all visits for the patient
       const patientVisits = await db
         .select({
           visit: visits,
@@ -16,17 +31,13 @@ export class VisitService {
         .where(eq(visits.patientId, patientId))
         .orderBy(desc(visits.date));
 
-      // For each visit, get prescriptions (we could do this with relations or a second query)
-      // Since it's local SQLite, a mapped promise all is fine for small scale, 
-      // or we can fetch all prescriptions for these visits.
-      
       const visitsWithDetails = await Promise.all(
         patientVisits.map(async (v) => {
           const visitPrescriptions = await db
             .select()
             .from(prescriptions)
             .where(eq(prescriptions.visitId, v.visit.id));
-            
+
           return {
             ...v.visit,
             doctorName: v.doctorName,
@@ -39,6 +50,58 @@ export class VisitService {
     } catch (error) {
       console.error('Failed to get patient visits:', error);
       return { success: false, error: 'Failed to retrieve medical history' };
+    }
+  }
+
+  static async createVisit(data: CreateVisitData) {
+    try {
+      const newVisit = {
+        id: crypto.randomUUID(),
+        patientId: data.patientId,
+        doctorId: data.doctorId,
+        date: new Date(data.date),
+        reason: data.reason || null,
+        notes: data.notes || null,
+        diagnosis: data.diagnosis || null,
+        createdAt: new Date(),
+        isVoided: false,
+      };
+
+      await db.insert(visits).values(newVisit);
+      return { success: true, data: newVisit };
+    } catch (error) {
+      console.error('Failed to create visit:', error);
+      return { success: false, error: 'Failed to create visit' };
+    }
+  }
+
+  static async updateVisit(id: string, data: UpdateVisitData) {
+    try {
+      await db.update(visits)
+        .set({
+          reason: data.reason,
+          notes: data.notes,
+          diagnosis: data.diagnosis,
+        })
+        .where(eq(visits.id, id));
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to update visit:', error);
+      return { success: false, error: 'Failed to update visit' };
+    }
+  }
+
+  static async voidVisit(id: string) {
+    try {
+      await db.update(visits)
+        .set({ isVoided: true })
+        .where(eq(visits.id, id));
+
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to void visit:', error);
+      return { success: false, error: 'Failed to void visit' };
     }
   }
 }

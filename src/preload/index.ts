@@ -18,6 +18,9 @@ const api = {
   },
   visit: {
     getByPatient: (patientId: string) => ipcRenderer.invoke('visit:getByPatient', patientId),
+    create: (data: any) => ipcRenderer.invoke('visit:create', data),
+    update: (id: string, data: any) => ipcRenderer.invoke('visit:update', id, data),
+    void: (id: string) => ipcRenderer.invoke('visit:void', id),
   },
 };
 

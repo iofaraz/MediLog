@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Phone, MapPin, User as UserIcon, Activity, FileText } from 'lucide-react';
+import { ArrowLeft, Calendar, Phone, MapPin, User as UserIcon, Activity, FileText, Plus } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import VisitForm from '../components/visits/VisitForm';
 
 interface Patient {
   id: string;
@@ -28,6 +30,8 @@ const PatientProfile = () => {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVisitFormOpen, setIsVisitFormOpen] = useState(false);
+  const { user } = useAuth();
 
   const fetchProfile = useCallback(async () => {
     if (!id) return;
@@ -107,7 +111,25 @@ const PatientProfile = () => {
               </p>
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
-              {/* Future actions like Edit Profile, New Visit could go here */}
+              <button
+                onClick={() => setIsVisitFormOpen(true)}
+                style={{
+                  padding: '10px 20px',
+                  background: 'var(--accent-primary)',
+                  color: 'white',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                }}
+              >
+                <Plus size={18} />
+                New Visit
+              </button>
             </div>
           </div>
 
@@ -206,6 +228,15 @@ const PatientProfile = () => {
         </div>
 
       </div>
+
+      {isVisitFormOpen && id && user && (
+        <VisitForm
+          patientId={id}
+          doctorId={user.id}
+          onClose={() => setIsVisitFormOpen(false)}
+          onSave={() => fetchProfile()}
+        />
+      )}
     </div>
   );
 };

@@ -34,6 +34,9 @@ declare global {
       };
       visit: {
         getByPatient: (patientId: string) => Promise<{ success: boolean; data?: any[]; error?: string }>;
+        create: (data: any) => Promise<{ success: boolean; data?: any; error?: string }>;
+        update: (id: string, data: any) => Promise<{ success: boolean; error?: string }>;
+        void: (id: string) => Promise<{ success: boolean; error?: string }>;
       };
     };
   }

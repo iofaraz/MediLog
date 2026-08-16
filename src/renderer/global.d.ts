@@ -32,6 +32,9 @@ declare global {
         update: (id: string, data: unknown) => Promise<{ success: boolean; data?: any; error?: string; details?: any }>;
         delete: (id: string) => Promise<{ success: boolean; error?: string }>;
       };
+      visit: {
+        getByPatient: (patientId: string) => Promise<{ success: boolean; data?: any[]; error?: string }>;
+      };
     };
   }
 }

@@ -16,6 +16,9 @@ const api = {
     update: (id: string, data: unknown) => ipcRenderer.invoke('patient:update', id, data),
     delete: (id: string) => ipcRenderer.invoke('patient:delete', id),
   },
+  visit: {
+    getByPatient: (patientId: string) => ipcRenderer.invoke('visit:getByPatient', patientId),
+  },
 };
 
 if (process.contextIsolated) {

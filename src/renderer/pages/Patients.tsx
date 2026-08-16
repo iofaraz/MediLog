@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, Search, Plus, User as UserIcon, Calendar, Edit2, Trash2 } from 'lucide-react';
 import PatientForm from '../components/patients/PatientForm';
 import { PatientFormData } from '../../shared/schemas';
@@ -13,6 +14,7 @@ interface Patient {
 }
 
 const Patients = () => {
+  const navigate = useNavigate();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -161,7 +163,7 @@ const Patients = () => {
                           <UserIcon size={20} />
                         </div>
                         <div>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{patient.firstName} {patient.lastName}</div>
+                          <div style={{ fontWeight: 600, color: 'var(--accent-primary)', cursor: 'pointer' }} onClick={() => navigate(`/patients/${patient.id}`)}>{patient.firstName} {patient.lastName}</div>
                           <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>ID: {patient.id.slice(0, 8)}</div>
                         </div>
                       </div>

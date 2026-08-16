@@ -3,6 +3,7 @@ import { join } from 'path';
 import { registerAuthHandlers } from './ipc/auth';
 import { registerDashboardHandlers } from './ipc/dashboard';
 import { registerPatientHandlers } from './ipc/patient';
+import { registerVisitHandlers } from './ipc/visit';
 import { AuthService } from './services/AuthService';
 
 function createWindow() {
@@ -38,6 +39,7 @@ app.whenReady().then(async () => {
   registerAuthHandlers();
   registerDashboardHandlers();
   registerPatientHandlers();
+  registerVisitHandlers();
 
   // Setup default admin user if not present
   await AuthService.setupDefaultAdmin();

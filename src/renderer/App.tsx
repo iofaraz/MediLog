@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
+import PatientProfile from './pages/PatientProfile';
 import LoginPage from './pages/LoginPage';
 import './index.css';
 
@@ -36,6 +37,7 @@ function AppRoutes() {
       >
         <Route index element={<Dashboard />} />
         <Route path="patients" element={<Patients />} />
+        <Route path="patients/:id" element={<PatientProfile />} />
         <Route path="visits" element={<div style={{ padding: '24px' }}>Visits (Coming Soon)</div>} />
         <Route path="medications" element={<div style={{ padding: '24px' }}>Medications (Coming Soon)</div>} />
         <Route path="settings" element={<div style={{ padding: '24px' }}>Settings (Coming Soon)</div>} />

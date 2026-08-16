@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
+import Patients from './pages/Patients';
 import LoginPage from './pages/LoginPage';
 import './index.css';
 
@@ -34,7 +35,7 @@ function AppRoutes() {
         }
       >
         <Route index element={<Dashboard />} />
-        <Route path="patients" element={<div style={{ padding: '24px' }}>Patients (Coming Soon)</div>} />
+        <Route path="patients" element={<Patients />} />
         <Route path="visits" element={<div style={{ padding: '24px' }}>Visits (Coming Soon)</div>} />
         <Route path="medications" element={<div style={{ padding: '24px' }}>Medications (Coming Soon)</div>} />
         <Route path="settings" element={<div style={{ padding: '24px' }}>Settings (Coming Soon)</div>} />

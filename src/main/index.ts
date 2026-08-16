@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron';
 import { join } from 'path';
 import { registerAuthHandlers } from './ipc/auth';
 import { registerDashboardHandlers } from './ipc/dashboard';
+import { registerPatientHandlers } from './ipc/patient';
 import { AuthService } from './services/AuthService';
 
 function createWindow() {
@@ -36,6 +37,7 @@ app.whenReady().then(async () => {
   // Register all IPC handlers before window creation
   registerAuthHandlers();
   registerDashboardHandlers();
+  registerPatientHandlers();
 
   // Setup default admin user if not present
   await AuthService.setupDefaultAdmin();

@@ -9,6 +9,13 @@ const api = {
   dashboard: {
     getStats: () => ipcRenderer.invoke('dashboard:getStats'),
   },
+  patient: {
+    getAll: (searchQuery?: string) => ipcRenderer.invoke('patient:getAll', searchQuery),
+    getById: (id: string) => ipcRenderer.invoke('patient:getById', id),
+    create: (data: unknown) => ipcRenderer.invoke('patient:create', data),
+    update: (id: string, data: unknown) => ipcRenderer.invoke('patient:update', id, data),
+    delete: (id: string) => ipcRenderer.invoke('patient:delete', id),
+  },
 };
 
 if (process.contextIsolated) {

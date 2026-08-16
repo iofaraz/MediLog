@@ -14,6 +14,17 @@ declare global {
           error?: string;
         }>;
       };
+      dashboard: {
+        getStats: () => Promise<{
+          success: boolean;
+          stats?: {
+            totalPatients: number;
+            todayVisits: number;
+            pendingFollowUps: number;
+          };
+          error?: string;
+        }>;
+      };
     };
   }
 }

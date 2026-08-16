@@ -6,6 +6,9 @@ const api = {
     login: (username: string, password: string) =>
       ipcRenderer.invoke('auth:login', username, password),
   },
+  dashboard: {
+    getStats: () => ipcRenderer.invoke('dashboard:getStats'),
+  },
 };
 
 if (process.contextIsolated) {

@@ -1,7 +1,8 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { patientSchema, PatientFormData } from '../../../shared/schemas';
+import { patientSchema } from '../../../shared/schemas';
+import type { PatientFormData } from '../../../shared/schemas';
 import { X, Save } from 'lucide-react';
 
 interface PatientFormProps {

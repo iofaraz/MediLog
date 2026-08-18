@@ -38,6 +38,17 @@ declare global {
         update: (id: string, data: any) => Promise<{ success: boolean; error?: string }>;
         void: (id: string) => Promise<{ success: boolean; error?: string }>;
       };
+      medication: {
+        getAll: (searchQuery?: string) => Promise<{ success: boolean; data?: any[]; error?: string }>;
+        create: (data: any) => Promise<{ success: boolean; data?: any; error?: string }>;
+        update: (id: string, data: any) => Promise<{ success: boolean; error?: string }>;
+        delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+      };
+      prescription: {
+        getByVisit: (visitId: string) => Promise<{ success: boolean; data?: any[]; error?: string }>;
+        create: (data: any) => Promise<{ success: boolean; data?: any; error?: string }>;
+        delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+      };
     };
   }
 }

@@ -215,7 +215,7 @@ const PatientProfile = () => {
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                         {visit.prescriptions.map((px: any) => (
                           <div key={px.id} style={{ padding: '6px 12px', background: 'rgba(245, 158, 11, 0.1)', color: 'var(--warning)', borderRadius: 'var(--radius-full)', fontSize: '0.85rem' }}>
-                            {px.dosage} ({px.frequency} for {px.duration})
+                            <span style={{ fontWeight: 600 }}>{px.medicationName}</span>: {px.dosage} ({px.frequency} for {px.duration})
                           </div>
                         ))}
                       </div>

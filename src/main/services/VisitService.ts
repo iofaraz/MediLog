@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { visits, prescriptions, users } from '../db/schema';
+import { visits, prescriptions, users, medications } from '../db/schema';
 import { eq, desc } from 'drizzle-orm';
 import crypto from 'crypto';
 
@@ -34,8 +34,18 @@ export class VisitService {
       const visitsWithDetails = await Promise.all(
         patientVisits.map(async (v) => {
           const visitPrescriptions = await db
-            .select()
+            .select({
+              id: prescriptions.id,
+              visitId: prescriptions.visitId,
+              medicationId: prescriptions.medicationId,
+              dosage: prescriptions.dosage,
+              frequency: prescriptions.frequency,
+              duration: prescriptions.duration,
+              notes: prescriptions.notes,
+              medicationName: medications.name,
+            })
             .from(prescriptions)
+            .leftJoin(medications, eq(prescriptions.medicationId, medications.id))
             .where(eq(prescriptions.visitId, v.visit.id));
 
           return {

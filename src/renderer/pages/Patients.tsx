@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Search, Plus, User as UserIcon, Calendar, Edit2, Trash2 } from 'lucide-react';
 import PatientForm from '../components/patients/PatientForm';
-import { PatientFormData } from '../../shared/schemas';
+import type { PatientFormData } from '../../shared/schemas';
 
 interface Patient {
   id: string;

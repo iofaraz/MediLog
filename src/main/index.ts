@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron';
 import { join } from 'path';
 import { registerAuthHandlers } from './ipc/auth';
 import { registerDashboardHandlers } from './ipc/dashboard';
+import { registerMedicationHandlers } from './ipc/medication';
 import { registerPatientHandlers } from './ipc/patient';
 import { registerVisitHandlers } from './ipc/visit';
 import { AuthService } from './services/AuthService';
@@ -40,6 +41,7 @@ app.whenReady().then(async () => {
   registerDashboardHandlers();
   registerPatientHandlers();
   registerVisitHandlers();
+  registerMedicationHandlers();
 
   // Setup default admin user if not present
   await AuthService.setupDefaultAdmin();

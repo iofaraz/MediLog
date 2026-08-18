@@ -22,6 +22,17 @@ const api = {
     update: (id: string, data: any) => ipcRenderer.invoke('visit:update', id, data),
     void: (id: string) => ipcRenderer.invoke('visit:void', id),
   },
+  medication: {
+    getAll: (searchQuery?: string) => ipcRenderer.invoke('medication:getAll', searchQuery),
+    create: (data: any) => ipcRenderer.invoke('medication:create', data),
+    update: (id: string, data: any) => ipcRenderer.invoke('medication:update', id, data),
+    delete: (id: string) => ipcRenderer.invoke('medication:delete', id),
+  },
+  prescription: {
+    getByVisit: (visitId: string) => ipcRenderer.invoke('prescription:getByVisit', visitId),
+    create: (data: any) => ipcRenderer.invoke('prescription:create', data),
+    delete: (id: string) => ipcRenderer.invoke('prescription:delete', id),
+  },
 };
 
 if (process.contextIsolated) {

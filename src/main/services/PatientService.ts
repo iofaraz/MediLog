@@ -1,24 +1,38 @@
 import { db } from '../db';
 import { patients } from '../db/schema';
-import { eq, desc, like } from 'drizzle-orm';
+import { eq, desc, like, or, and } from 'drizzle-orm';
 import crypto from 'crypto';
 import { patientSchema } from '../../shared/schemas';
 
+interface GetPatientsOptions {
+  searchQuery?: string;
+  gender?: string;
+}
+
 export class PatientService {
-  static async getPatients(searchQuery?: string) {
+  static async getPatients(options: GetPatientsOptions = {}) {
     try {
-      let query = db.select().from(patients).orderBy(desc(patients.updatedAt));
-      
+      const { searchQuery, gender } = options;
+      const conditions: any[] = [];
+
       if (searchQuery) {
-        // Basic search on first or last name
-        query = db.select().from(patients)
-          .where(like(patients.firstName, `%${searchQuery}%`))
-          .orderBy(desc(patients.updatedAt)) as any;
-          
-          // Note: Full text search in SQLite requires FTS5, but simple LIKE is fine for basic usage
+        // Search across first name OR last name
+        conditions.push(
+          or(
+            like(patients.firstName, `%${searchQuery}%`),
+            like(patients.lastName, `%${searchQuery}%`)
+          )
+        );
       }
 
-      const results = await query;
+      if (gender && gender !== 'All') {
+        conditions.push(eq(patients.gender, gender));
+      }
+
+      const results = await db.select().from(patients)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(patients.updatedAt));
+
       return { success: true, data: results };
     } catch (error) {
       console.error('Failed to get patients:', error);
@@ -39,9 +53,8 @@ export class PatientService {
 
   static async createPatient(data: unknown) {
     try {
-      // Validate incoming data
       const parsedData = patientSchema.parse(data);
-      
+
       const newPatient = {
         id: crypto.randomUUID(),
         ...parsedData,
@@ -63,7 +76,7 @@ export class PatientService {
   static async updatePatient(id: string, data: unknown) {
     try {
       const parsedData = patientSchema.parse(data);
-      
+
       const updatedPatient = {
         ...parsedData,
         updatedAt: new Date(),

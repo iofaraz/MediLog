@@ -10,7 +10,7 @@ const api = {
     getStats: () => ipcRenderer.invoke('dashboard:getStats'),
   },
   patient: {
-    getAll: (searchQuery?: string) => ipcRenderer.invoke('patient:getAll', searchQuery),
+    getAll: (options?: { searchQuery?: string; gender?: string }) => ipcRenderer.invoke('patient:getAll', options),
     getById: (id: string) => ipcRenderer.invoke('patient:getById', id),
     create: (data: unknown) => ipcRenderer.invoke('patient:create', data),
     update: (id: string, data: unknown) => ipcRenderer.invoke('patient:update', id, data),

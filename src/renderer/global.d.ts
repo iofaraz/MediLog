@@ -26,7 +26,7 @@ declare global {
         }>;
       };
       patient: {
-        getAll: (searchQuery?: string) => Promise<{ success: boolean; data?: any[]; error?: string }>;
+        getAll: (options?: { searchQuery?: string; gender?: string }) => Promise<{ success: boolean; data?: any[]; error?: string }>;
         getById: (id: string) => Promise<{ success: boolean; data?: any; error?: string }>;
         create: (data: unknown) => Promise<{ success: boolean; data?: any; error?: string; details?: any }>;
         update: (id: string, data: unknown) => Promise<{ success: boolean; data?: any; error?: string; details?: any }>;

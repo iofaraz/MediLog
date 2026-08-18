@@ -20,15 +20,16 @@ const Patients = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | undefined>(undefined);
+  const [genderFilter, setGenderFilter] = useState('All');
 
   const fetchPatients = useCallback(async () => {
     setIsLoading(true);
-    const result = await window.api.patient.getAll(searchQuery);
+    const result = await window.api.patient.getAll({ searchQuery, gender: genderFilter });
     if (result.success && result.data) {
       setPatients(result.data);
     }
     setIsLoading(false);
-  }, [searchQuery]);
+  }, [searchQuery, genderFilter]);
 
   useEffect(() => {
     // Debounce search
@@ -129,6 +130,23 @@ const Patients = () => {
               }}
             />
           </div>
+          <select
+            value={genderFilter}
+            onChange={(e) => setGenderFilter(e.target.value)}
+            style={{
+              padding: '10px 16px',
+              background: 'rgba(15, 17, 23, 0.6)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-md)',
+              color: 'white',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="All">All Genders</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
 
         <div style={{ flex: 1, overflow: 'auto' }}>

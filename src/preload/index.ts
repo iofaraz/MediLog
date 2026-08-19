@@ -17,6 +17,7 @@ const api = {
     delete: (id: string, userId: string) => ipcRenderer.invoke('patient:delete', id, userId),
   },
   visit: {
+    getAll: (filters?: any) => ipcRenderer.invoke('visit:getAll', filters),
     getByPatient: (patientId: string) => ipcRenderer.invoke('visit:getByPatient', patientId),
     create: (data: any) => ipcRenderer.invoke('visit:create', data),
     update: (id: string, data: any) => ipcRenderer.invoke('visit:update', id, data),
@@ -52,6 +53,10 @@ const api = {
   },
   analytics: {
     getDashboard: () => ipcRenderer.invoke('analytics:getDashboard'),
+  },
+  export: {
+    patients: () => ipcRenderer.invoke('export:patients'),
+    visits: () => ipcRenderer.invoke('export:visits'),
   }
 };
 

@@ -10,6 +10,7 @@ import { registerBackupHandlers } from './ipc/backup';
 import { registerSettingsHandlers } from './ipc/settings';
 import { registerUserHandlers } from './ipc/users';
 import { registerAnalyticsHandlers } from './ipc/analytics';
+import { registerExportHandlers } from './ipc/export';
 import { AuthService } from './services/AuthService';
 
 function createWindow() {
@@ -52,6 +53,7 @@ app.whenReady().then(async () => {
   registerSettingsHandlers();
   registerUserHandlers();
   registerAnalyticsHandlers();
+  registerExportHandlers();
 
   // Setup default admin user if not present
   await AuthService.setupDefaultAdmin();

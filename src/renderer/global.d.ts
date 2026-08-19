@@ -69,6 +69,10 @@ declare global {
       analytics: {
         getDashboard: () => Promise<{ success: boolean; data?: any; error?: string }>;
       };
+      export: {
+        patients: () => Promise<{ success: boolean; error?: string }>;
+        visits: () => Promise<{ success: boolean; error?: string }>;
+      };
     };
   }
 }

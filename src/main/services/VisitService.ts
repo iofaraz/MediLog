@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { visits, prescriptions, users, medications } from '../db/schema';
+import { visits, prescriptions, users, medications, patients } from '../db/schema';
 import { eq, desc } from 'drizzle-orm';
 import crypto from 'crypto';
 
@@ -19,6 +19,34 @@ interface UpdateVisitData {
 }
 
 export class VisitService {
+  static async getAllVisits(_filters?: { dateFrom?: string; dateTo?: string }) {
+    try {
+      const allVisits = await db
+        .select({
+          id: visits.id,
+          patientId: visits.patientId,
+          doctorId: visits.doctorId,
+          date: visits.date,
+          reason: visits.reason,
+          diagnosis: visits.diagnosis,
+          isVoided: visits.isVoided,
+          createdAt: visits.createdAt,
+          patientFirstName: patients.firstName,
+          patientLastName: patients.lastName,
+          doctorName: users.name,
+        })
+        .from(visits)
+        .leftJoin(patients, eq(visits.patientId, patients.id))
+        .leftJoin(users, eq(visits.doctorId, users.id))
+        .orderBy(desc(visits.date));
+
+      return { success: true, data: allVisits };
+    } catch (error) {
+      console.error('Failed to get all visits:', error);
+      return { success: false, error: 'Failed to retrieve visits' };
+    }
+  }
+
   static async getVisitsByPatient(patientId: string) {
     try {
       const patientVisits = await db

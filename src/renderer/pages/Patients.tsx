@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Search, Plus, User as UserIcon, Calendar, Edit2, Trash2 } from 'lucide-react';
+import { Users, Search, Plus, User as UserIcon, Calendar, Edit2, Trash2, Download } from 'lucide-react';
 import PatientForm from '../components/patients/PatientForm';
 import { useAuth } from '../context/AuthContext';
 import type { PatientFormData } from '../../shared/schemas';
@@ -70,6 +70,13 @@ const Patients = () => {
     }
   };
 
+  const handleExportCSV = async () => {
+    const result = await window.api.export.patients();
+    if (!result.success && result.error !== 'Export cancelled.') {
+      alert(result.error || 'Failed to export patients');
+    }
+  };
+
   const calculateAge = (dobString: string) => {
     const dob = new Date(dobString);
     const diff = Date.now() - dob.getTime();
@@ -91,26 +98,36 @@ const Patients = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            setEditingPatient(undefined);
-            setIsFormOpen(true);
-          }}
-          style={{
-            padding: '12px 24px',
-            background: 'var(--accent-primary)',
-            color: 'white',
-            borderRadius: 'var(--radius-md)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontWeight: 600,
-            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-          }}
-        >
-          <Plus size={20} />
-          New Patient
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={handleExportCSV}
+            className="btn btn-secondary"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <Download size={18} />
+            Export CSV
+          </button>
+          <button
+            onClick={() => {
+              setEditingPatient(undefined);
+              setIsFormOpen(true);
+            }}
+            style={{
+              padding: '12px 24px',
+              background: 'var(--accent-primary)',
+              color: 'white',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontWeight: 600,
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+            }}
+          >
+            <Plus size={20} />
+            New Patient
+          </button>
+        </div>
       </div>
 
       <div className="glass-panel" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', flex: 1, display: 'flex', flexDirection: 'column' }}>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Database, Download, Upload, AlertTriangle, ShieldCheck, Building, Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -39,16 +40,38 @@ const Settings = () => {
       } else if (result.error !== 'Backup cancelled.') {
         setMessage({ type: 'error', text: result.error || 'Failed to create backup' });
       }
-    } catch (error: any) {
+    } catch (_) {
       setMessage({ type: 'error', text: 'An unexpected error occurred' });
     }
     setIsBackingUp(false);
   };
 
   const handleRestore = async () => {
-    if (!window.confirm('WARNING: Restoring a backup will OVERWRITE all current data and restart the application. Are you sure you want to proceed?')) {
-      return;
-    }
+    const confirmed = await new Promise<boolean>((resolve) => {
+      toast(
+        (t) => (
+          <span>
+            <strong>⚠️ Warning:</strong> This will overwrite all current data and restart the app.
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <button
+                onClick={() => { toast.dismiss(t.id); resolve(true); }}
+                style={{ background: '#ef4444', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer' }}
+              >
+                Restore
+              </button>
+              <button
+                onClick={() => { toast.dismiss(t.id); resolve(false); }}
+                style={{ background: '#374151', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </span>
+        ),
+        { duration: Infinity, position: 'top-center' }
+      );
+    });
+    if (!confirmed) return;
 
     setIsRestoring(true);
     setMessage(null);
@@ -57,7 +80,7 @@ const Settings = () => {
       if (!result.success && result.error !== 'Restore cancelled.') {
         setMessage({ type: 'error', text: result.error || 'Failed to restore backup' });
       }
-    } catch (error: any) {
+    } catch (_) {
       setMessage({ type: 'error', text: 'An unexpected error occurred' });
     }
     setIsRestoring(false);
@@ -73,7 +96,7 @@ const Settings = () => {
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to save settings' });
       }
-    } catch (error: any) {
+    } catch (_) {
       setMessage({ type: 'error', text: 'An unexpected error occurred while saving settings' });
     }
     setIsSavingSettings(false);

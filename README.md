@@ -1,32 +1,136 @@
-# React + TypeScript + Vite
+# MediLog
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+MediLog is a modern, offline-first Electronic Health Record (EHR) and Clinic Management desktop application built with Electron and React. It is designed to be fast, secure, and fully self-contained, with all data stored locally on the user's machine.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Authentication & Authorization:** Role-based access control (Admin vs. Doctor). Master admin account creation on first launch.
+- **Patient Management:** Full CRUD operations for patient records with detailed profiles.
+- **Visits & Prescriptions:** Track patient visits, medical notes, and prescribe medications dynamically.
+- **Medication Inventory:** Manage the clinic's medication database, including descriptions and default dosages.
+- **Dashboard & Analytics:** Visual insights into clinic performance, daily visits, and demographics using Recharts.
+- **Security & Audit Logs:** Every action (Create, Update, Delete) is securely logged with timestamps and user attribution.
+- **Data Export:** Export Patients and Visits data directly to CSV format.
+- **Backup & Restore:** Easily backup the SQLite database to a local file and restore it when needed.
+- **Modern UI:** Sleek dark-mode interface with toast notifications, skeleton loaders, and keyboard shortcuts for power users.
 
-## React Compiler
+## 🏗 Architecture & Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+MediLog follows a strict 3-process Electron architecture for maximum security and separation of concerns.
 
-## Expanding the Oxlint configuration
+### Tech Stack
+- **Frontend:** React 18, TypeScript, Vite, React Router, React Hook Form, Recharts, Lucide React, React Hot Toast.
+- **Backend (Main Process):** Node.js, Electron.
+- **Database:** SQLite3 (`better-sqlite3`), Drizzle ORM.
+- **Security:** `scrypt` for password hashing, strict IPC Context Bridge.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+### The 3-Process Model
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+1. **Renderer Process (React UI):**
+   - Handles the visual interface.
+   - Entirely sandboxed. It cannot access the Node.js API or the file system directly.
+   - Communicates with the Main process strictly through the Preload script.
+
+2. **Preload Script:**
+   - Acts as a secure bridge between the Renderer and the Main process.
+   - Uses Electron's `contextBridge` to expose a typed `window.api` object to the React frontend.
+   - Translates `window.api` calls into `ipcRenderer.invoke` messages.
+
+3. **Main Process (Node.js/Electron):**
+   - Manages the application lifecycle, native file dialogs, and window management.
+   - Handles the SQLite database connection using Drizzle ORM.
+   - Listens to `ipcMain.handle` events triggered by the frontend, executes the requested database operations, and returns the results.
+
+### Data Flow Example (Adding a Patient)
+1. User submits the Patient Form in the **Renderer** (`Patients.tsx`).
+2. Renderer calls `window.api.patient.create(patientData, userId)`.
+3. **Preload** translates this to `ipcRenderer.invoke('patient:create', patientData, userId)`.
+4. **Main** process catches the event in `src/main/ipc/patient.ts`.
+5. Main process calls `PatientService.createPatient()`, which inserts the row into SQLite via Drizzle ORM and automatically logs the action in the `audit_logs` table.
+6. Main process returns a `{ success: true, data: newPatient }` object back through the IPC channel to the Renderer.
+
+## 📂 Project Structure
+
+```text
+MediLog/
+├── src/
+│   ├── main/                 # Electron Main Process
+│   │   ├── db/               # Drizzle ORM schemas, migrations, and SQLite connection
+│   │   ├── ipc/              # IPC event handlers (receivers)
+│   │   └── services/         # Business logic and database operations
+│   ├── preload/              # Preload Script
+│   │   └── index.ts          # contextBridge definitions (window.api)
+│   ├── renderer/             # React Frontend (Vite)
+│   │   ├── assets/           # Global CSS and images
+│   │   ├── components/       # Reusable UI components and forms
+│   │   ├── context/          # React Context (e.g., AuthContext)
+│   │   ├── pages/            # Main application views (Dashboard, Patients, etc.)
+│   │   └── App.tsx           # React Router setup
+│   └── shared/               # Shared TypeScript schemas and types
+├── drizzle/                  # SQL Migration files generated by Drizzle Kit
+├── electron.vite.config.ts   # Electron-Vite build configuration
+└── package.json
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## 💾 Database schema
+
+The database utilizes SQLite, stored locally at `%APPDATA%/medilog/userData/medilog.sqlite` (Windows) or `~/.config/medilog/userData/medilog.sqlite` (Linux/Mac).
+
+**Core Tables:**
+- `users`: Staff credentials and roles.
+- `patients`: Patient demographics.
+- `visits`: Medical visits linked to a patient and doctor.
+- `prescriptions`: Medications prescribed during a specific visit.
+- `medications`: Clinic medication inventory.
+- `audit_logs`: Immutable ledger of all system actions.
+- `settings`: Key-value pair configuration for the clinic.
+
+## 🚀 Installation & Usage
+
+### Prerequisites
+- Node.js (v18 or higher recommended)
+- npm or yarn
+
+### Setup
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+   This will start Vite for the renderer process and compile the main/preload scripts, launching the Electron app in development mode with Hot Module Replacement (HMR).
+
+3. **Database Migrations:**
+   Migrations are handled automatically on app startup. If you need to generate new migrations after altering the schema in `src/main/db/schema.ts`, run:
+   ```bash
+   npm run db:generate
+   ```
+
+### 📦 Packaging for Production
+
+To build and package the application for distribution:
+
+```bash
+# Build the TypeScript and React code
+npm run build
+
+# Package the application for your current OS
+npm run package
+```
+*Note: Make sure `electron-builder` or the equivalent bundler configuration in your `package.json` is set up for your target platforms (Windows, Mac, Linux).*
+
+## ⌨️ Keyboard Shortcuts
+
+- `Ctrl + N` (or `Cmd + N` on Mac): Open the "New" form on the current page (e.g., New Patient, New Medication).
+- `Esc`: Close any open modal or form.
+
+## 🛡 Security Notes
+
+- **Passwords:** All passwords are hashed using Node's native `crypto.scryptSync` with random salts. Raw passwords are never stored.
+- **SQL Injection:** Drizzle ORM inherently uses parameterized queries, preventing SQL injection attacks.
+- **XSS:** React safely escapes all data rendered in the UI.
+- **Node Integration:** Node integration is strictly disabled in the Renderer process. The Context Bridge ensures only explicitly defined APIs are accessible to the frontend.

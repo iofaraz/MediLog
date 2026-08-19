@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UserCog, Plus, Edit2, Trash2, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
+import toast from 'react-hot-toast';
 
 const StaffManagement = () => {
   const { user } = useAuth();
@@ -19,18 +20,33 @@ const StaffManagement = () => {
   });
   const [formError, setFormError] = useState('');
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     const result = await window.api.users.getAll();
     if (result.success && result.data) {
       setUsers(result.data);
     }
     setIsLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isModalOpen) {
+        setIsModalOpen(false);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        handleOpenModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen]);
 
   const handleOpenModal = (userToEdit: any = null) => {
     setFormError('');
@@ -75,20 +91,21 @@ const StaffManagement = () => {
 
   const handleDelete = async (id: string, username: string) => {
     if (username === 'admin') {
-      alert('The master admin account cannot be deleted.');
+      toast.error('The master admin account cannot be deleted.');
       return;
     }
     if (id === user?.id) {
-      alert('You cannot delete your own account while logged in.');
+      toast.error('You cannot delete your own account while logged in.');
       return;
     }
     
     if (window.confirm(`Are you sure you want to delete the user account for ${username}?`)) {
       const result = await window.api.users.delete(id, user?.id || '');
       if (result.success) {
+        toast.success(`User ${username} deleted`);
         fetchUsers();
       } else {
-        alert(result.error || 'Failed to delete user.');
+        toast.error(result.error || 'Failed to delete user.');
       }
     }
   };

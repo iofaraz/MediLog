@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Pill, Search, Plus, Edit2, Trash2, X, Save } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
+import { SkeletonRow } from '../components/ui/Skeleton';
 
 interface Medication {
   id: string;
@@ -38,7 +40,23 @@ const Medications = () => {
       fetchMedications();
     }, 300);
     return () => clearTimeout(timer);
-  }, [fetchMedications]);
+  }, [fetchMedications, searchQuery]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFormOpen) {
+        handleCloseForm();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        setEditingMed(undefined);
+        setIsFormOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFormOpen]);
 
   const handleOpenForm = (med?: Medication) => {
     setEditingMed(med);
@@ -68,10 +86,11 @@ const Medications = () => {
     }
 
     if (result.success) {
+      toast.success(editingMed ? 'Medication updated' : 'Medication added');
       handleCloseForm();
       fetchMedications();
     } else {
-      alert(result.error || 'Failed to save medication');
+      toast.error(result.error || 'Failed to save medication');
     }
   };
 
@@ -79,9 +98,10 @@ const Medications = () => {
     if (window.confirm('Are you sure you want to delete this medication?')) {
       const result = await window.api.medication.delete(id);
       if (result.success) {
+        toast.success('Medication deleted');
         fetchMedications();
       } else {
-        alert(result.error || 'Failed to delete medication');
+        toast.error(result.error || 'Failed to delete medication');
       }
     }
   };
@@ -154,14 +174,18 @@ const Medications = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: '48px', color: 'var(--text-tertiary)' }}>
-                    Loading medications...
+                  <td colSpan={4} style={{ padding: 0 }}>
+                    <SkeletonRow count={5} />
                   </td>
                 </tr>
               ) : medications.length === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: '48px', color: 'var(--text-tertiary)' }}>
-                    No medications found.
+                  <td colSpan={4} style={{ textAlign: 'center', padding: '60px' }}>
+                    <Pill size={48} style={{ margin: '0 auto 16px', opacity: 0.2, display: 'block' }} />
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>No medications found</p>
+                    <p style={{ color: 'var(--text-tertiary)', fontSize: '0.85rem', marginTop: '4px' }}>
+                      {searchQuery ? 'Try adjusting your search filters' : 'Add a medication to your clinic inventory'}
+                    </p>
                   </td>
                 </tr>
               ) : (

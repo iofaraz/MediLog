@@ -11,6 +11,7 @@ import AuditLogs from './pages/AuditLogs';
 import Settings from './pages/Settings';
 import StaffManagement from './pages/StaffManagement';
 import Visits from './pages/Visits';
+import { Toaster } from 'react-hot-toast';
 import './index.css';
 
 // Guard: redirects to login if not authenticated
@@ -59,6 +60,28 @@ function App() {
     <HashRouter>
       <AuthProvider>
         <AppRoutes />
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: '#1e293b',
+              color: '#f8fafc',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+            },
+            success: {
+              iconTheme: {
+                primary: '#10b981',
+                secondary: '#1e293b',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#1e293b',
+              },
+            },
+          }}
+        />
       </AuthProvider>
     </HashRouter>
   );

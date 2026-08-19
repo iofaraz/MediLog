@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { Users, Calendar, Pill, Activity, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
+import { Skeleton } from '../components/ui/Skeleton';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -51,8 +52,19 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-        Loading dashboard...
+      <div style={{ padding: '32px', height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div>
+          <Skeleton width={200} height={36} style={{ marginBottom: '8px' }} />
+          <Skeleton width={150} height={16} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+          {[1, 2, 3].map(i => <Skeleton key={i} height={100} borderRadius="var(--radius-lg)" />)}
+        </div>
+        <Skeleton height={300} borderRadius="var(--radius-lg)" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '16px' }}>
+          <Skeleton height={300} borderRadius="var(--radius-lg)" />
+          <Skeleton height={300} borderRadius="var(--radius-lg)" />
+        </div>
       </div>
     );
   }

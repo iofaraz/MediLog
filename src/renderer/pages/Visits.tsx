@@ -1,7 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Search, User, Stethoscope, Filter, Eye, Download } from 'lucide-react';
 import { format } from 'date-fns';
+import toast from 'react-hot-toast';
+import { SkeletonRow } from '../components/ui/Skeleton';
 
 interface Visit {
   id: string;
@@ -73,8 +75,10 @@ const Visits = () => {
         <button
           onClick={async () => {
             const result = await window.api.export.visits();
-            if (!result.success && result.error !== 'Export cancelled.') {
-              alert(result.error || 'Failed to export visits');
+            if (result.success) {
+              toast.success('Visits exported successfully');
+            } else if (result.error !== 'Export cancelled.') {
+              toast.error(result.error || 'Failed to export visits');
             }
           }}
           className="btn btn-secondary"
@@ -163,8 +167,8 @@ const Visits = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '60px', color: 'var(--text-secondary)' }}>
-                    Loading visits...
+                  <td colSpan={7} style={{ padding: 0 }}>
+                    <SkeletonRow count={5} />
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (

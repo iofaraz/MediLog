@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Users, Search, Plus, User as UserIcon, Calendar, Edit2, Trash2, Download } from 'lucide-react';
 import PatientForm from '../components/patients/PatientForm';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
+import { SkeletonRow } from '../components/ui/Skeleton';
 import type { PatientFormData } from '../../shared/schemas';
 
 interface Patient {
@@ -39,7 +41,23 @@ const Patients = () => {
       fetchPatients();
     }, 300);
     return () => clearTimeout(timer);
-  }, [fetchPatients]);
+  }, [fetchPatients, searchQuery, genderFilter]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFormOpen) {
+        setIsFormOpen(false);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        setEditingPatient(undefined);
+        setIsFormOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFormOpen]);
 
   const handleSavePatient = async (data: PatientFormData) => {
     let result;
@@ -51,11 +69,12 @@ const Patients = () => {
     }
 
     if (result.success) {
+      toast.success(editingPatient ? 'Patient updated successfully' : 'Patient created successfully');
       setIsFormOpen(false);
       setEditingPatient(undefined);
       fetchPatients();
     } else {
-      alert(result.error || 'Failed to save patient');
+      toast.error(result.error || 'Failed to save patient');
     }
   };
 
@@ -63,17 +82,20 @@ const Patients = () => {
     if (window.confirm('Are you sure you want to delete this patient? This action cannot be undone.')) {
       const result = await window.api.patient.delete(id, user?.id || 'unknown');
       if (result.success) {
+        toast.success('Patient deleted');
         fetchPatients();
       } else {
-        alert(result.error || 'Failed to delete patient');
+        toast.error(result.error || 'Failed to delete patient');
       }
     }
   };
 
   const handleExportCSV = async () => {
     const result = await window.api.export.patients();
-    if (!result.success && result.error !== 'Export cancelled.') {
-      alert(result.error || 'Failed to export patients');
+    if (result.success) {
+      toast.success('Patients exported successfully');
+    } else if (result.error !== 'Export cancelled.') {
+      toast.error(result.error || 'Failed to export patients');
     }
   };
 
@@ -182,14 +204,18 @@ const Patients = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: '48px', color: 'var(--text-tertiary)' }}>
-                    Loading patients...
+                  <td colSpan={6} style={{ padding: 0 }}>
+                    <SkeletonRow count={5} />
                   </td>
                 </tr>
               ) : patients.length === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: '48px', color: 'var(--text-tertiary)' }}>
-                    No patients found.
+                  <td colSpan={4} style={{ textAlign: 'center', padding: '60px' }}>
+                    <Users size={48} style={{ margin: '0 auto 16px', opacity: 0.2, display: 'block' }} />
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>No patients found</p>
+                    <p style={{ color: 'var(--text-tertiary)', fontSize: '0.85rem', marginTop: '4px' }}>
+                      {searchQuery ? 'Try adjusting your search filters' : 'Add your first patient to get started'}
+                    </p>
                   </td>
                 </tr>
               ) : (

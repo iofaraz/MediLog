@@ -33,6 +33,7 @@ declare global {
         delete: (id: string, userId: string) => Promise<{ success: boolean; error?: string }>;
       };
       visit: {
+        getAll: () => Promise<{ success: boolean; data?: any[]; error?: string }>;
         getByPatient: (patientId: string) => Promise<{ success: boolean; data?: any[]; error?: string }>;
         create: (data: any) => Promise<{ success: boolean; data?: any; error?: string }>;
         update: (id: string, data: any) => Promise<{ success: boolean; error?: string }>;

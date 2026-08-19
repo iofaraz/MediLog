@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Activity } from 'lucide-react';
+import { Activity, Shield } from 'lucide-react';
 import { format } from 'date-fns';
+import { SkeletonRow } from '../components/ui/Skeleton';
 
 interface AuditLog {
   id: string;
@@ -107,14 +108,18 @@ const AuditLogs = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-                    Loading audit logs...
+                  <td colSpan={5} style={{ padding: 0 }}>
+                    <SkeletonRow count={5} />
                   </td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-                    No audit logs found.
+                  <td colSpan={4} style={{ textAlign: 'center', padding: '60px' }}>
+                    <Shield size={48} style={{ margin: '0 auto 16px', opacity: 0.2, display: 'block' }} />
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>No audit logs found</p>
+                    <p style={{ color: 'var(--text-tertiary)', fontSize: '0.85rem', marginTop: '4px' }}>
+                      Try adjusting your search filters or date range
+                    </p>
                   </td>
                 </tr>
               ) : (

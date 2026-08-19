@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { X, Save, Plus, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface VisitFormData {
   date: string;
@@ -106,14 +107,15 @@ const VisitForm: React.FC<VisitFormProps> = ({ patientId, doctorId, initialData,
             }
           }
         }
+        toast.success(initialData ? 'Visit updated successfully' : 'Visit created successfully');
         onSave();
         onClose();
       } else {
-        alert(result.error || 'Failed to save visit');
+        toast.error(result.error || 'Failed to save visit');
       }
     } catch (err) {
       console.error('Error saving visit:', err);
-      alert('An unexpected error occurred');
+      toast.error('An unexpected error occurred');
     }
   };
 

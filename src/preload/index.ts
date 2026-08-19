@@ -39,6 +39,10 @@ const api = {
   backup: {
     create: (userId: string) => ipcRenderer.invoke('backup:create', userId),
     restore: (userId: string) => ipcRenderer.invoke('backup:restore', userId),
+  },
+  settings: {
+    getAll: () => ipcRenderer.invoke('settings:getAll'),
+    update: (newSettings: Record<string, string>, userId: string) => ipcRenderer.invoke('settings:update', newSettings, userId),
   }
 };
 

@@ -56,6 +56,10 @@ declare global {
         create: (userId: string) => Promise<{ success: boolean; error?: string }>;
         restore: (userId: string) => Promise<{ success: boolean; error?: string }>;
       };
+      settings: {
+        getAll: () => Promise<{ success: boolean; data?: Record<string, string>; error?: string }>;
+        update: (newSettings: Record<string, string>, userId: string) => Promise<{ success: boolean; error?: string }>;
+      };
     };
   }
 }

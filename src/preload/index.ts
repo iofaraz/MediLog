@@ -49,6 +49,9 @@ const api = {
     create: (data: any, adminId: string) => ipcRenderer.invoke('users:create', data, adminId),
     update: (id: string, data: any, adminId: string) => ipcRenderer.invoke('users:update', id, data, adminId),
     delete: (id: string, adminId: string) => ipcRenderer.invoke('users:delete', id, adminId),
+  },
+  analytics: {
+    getDashboard: () => ipcRenderer.invoke('analytics:getDashboard'),
   }
 };
 

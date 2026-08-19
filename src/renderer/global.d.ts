@@ -66,6 +66,9 @@ declare global {
         update: (id: string, data: any, adminId: string) => Promise<{ success: boolean; error?: string }>;
         delete: (id: string, adminId: string) => Promise<{ success: boolean; error?: string }>;
       };
+      analytics: {
+        getDashboard: () => Promise<{ success: boolean; data?: any; error?: string }>;
+      };
     };
   }
 }

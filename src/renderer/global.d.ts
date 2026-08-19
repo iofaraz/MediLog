@@ -52,6 +52,10 @@ declare global {
       audit: {
         getLogs: (options?: { entityType?: string; userId?: string; startDate?: Date; endDate?: Date; limit?: number }) => Promise<{ success: boolean; data?: any[]; error?: string }>;
       };
+      backup: {
+        create: (userId: string) => Promise<{ success: boolean; error?: string }>;
+        restore: (userId: string) => Promise<{ success: boolean; error?: string }>;
+      };
     };
   }
 }

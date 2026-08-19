@@ -36,6 +36,10 @@ const api = {
   audit: {
     getLogs: (options?: any) => ipcRenderer.invoke('audit:getLogs', options),
   },
+  backup: {
+    create: (userId: string) => ipcRenderer.invoke('backup:create', userId),
+    restore: (userId: string) => ipcRenderer.invoke('backup:restore', userId),
+  }
 };
 
 if (process.contextIsolated) {

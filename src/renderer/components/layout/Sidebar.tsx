@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, CalendarDays, Pill, Settings, Activity } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarDays, Pill, Settings, Activity, Shield } from 'lucide-react';
 
 const Sidebar = () => {
   const navItems = [
@@ -8,6 +8,7 @@ const Sidebar = () => {
     { name: 'Patients', path: '/patients', icon: <Users size={20} /> },
     { name: 'Visits', path: '/visits', icon: <CalendarDays size={20} /> },
     { name: 'Medications', path: '/medications', icon: <Pill size={20} /> },
+    { name: 'Audit Logs', path: '/audit', icon: <Shield size={20} /> },
     { name: 'Settings', path: '/settings', icon: <Settings size={20} /> },
   ];
 

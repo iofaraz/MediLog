@@ -3,6 +3,7 @@ import { patients } from '../db/schema';
 import { eq, desc, like, or, and } from 'drizzle-orm';
 import crypto from 'crypto';
 import { patientSchema } from '../../shared/schemas';
+import { AuditService } from './AuditService';
 
 interface GetPatientsOptions {
   searchQuery?: string;
@@ -51,7 +52,7 @@ export class PatientService {
     }
   }
 
-  static async createPatient(data: unknown) {
+  static async createPatient(data: unknown, userId: string) {
     try {
       const parsedData = patientSchema.parse(data);
 
@@ -63,6 +64,7 @@ export class PatientService {
       };
 
       await db.insert(patients).values(newPatient);
+      await AuditService.log({ userId, action: 'CREATE', entityType: 'PATIENT', entityId: newPatient.id, details: `Created patient: ${newPatient.firstName} ${newPatient.lastName}` });
       return { success: true, data: newPatient };
     } catch (error: any) {
       console.error('Failed to create patient:', error);
@@ -73,7 +75,7 @@ export class PatientService {
     }
   }
 
-  static async updatePatient(id: string, data: unknown) {
+  static async updatePatient(id: string, data: unknown, userId: string) {
     try {
       const parsedData = patientSchema.parse(data);
 
@@ -86,6 +88,7 @@ export class PatientService {
         .set(updatedPatient)
         .where(eq(patients.id, id));
 
+      await AuditService.log({ userId, action: 'UPDATE', entityType: 'PATIENT', entityId: id });
       return { success: true, data: { id, ...updatedPatient } };
     } catch (error: any) {
       console.error('Failed to update patient:', error);
@@ -96,9 +99,10 @@ export class PatientService {
     }
   }
 
-  static async deletePatient(id: string) {
+  static async deletePatient(id: string, userId: string) {
     try {
       await db.delete(patients).where(eq(patients.id, id));
+      await AuditService.log({ userId, action: 'DELETE', entityType: 'PATIENT', entityId: id });
       return { success: true };
     } catch (error) {
       console.error('Failed to delete patient:', error);

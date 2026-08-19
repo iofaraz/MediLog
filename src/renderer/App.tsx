@@ -7,6 +7,7 @@ import Patients from './pages/Patients';
 import PatientProfile from './pages/PatientProfile';
 import Medications from './pages/Medications';
 import LoginPage from './pages/LoginPage';
+import AuditLogs from './pages/AuditLogs';
 import './index.css';
 
 // Guard: redirects to login if not authenticated
@@ -41,6 +42,7 @@ function AppRoutes() {
         <Route path="patients/:id" element={<PatientProfile />} />
         <Route path="visits" element={<div style={{ padding: '24px' }}>Visits (Coming Soon)</div>} />
         <Route path="medications" element={<Medications />} />
+        <Route path="audit" element={<AuditLogs />} />
         <Route path="settings" element={<div style={{ padding: '24px' }}>Settings (Coming Soon)</div>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

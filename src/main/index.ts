@@ -5,6 +5,7 @@ import { registerDashboardHandlers } from './ipc/dashboard';
 import { registerMedicationHandlers } from './ipc/medication';
 import { registerPatientHandlers } from './ipc/patient';
 import { registerVisitHandlers } from './ipc/visit';
+import { registerAuditHandlers } from './ipc/audit';
 import { AuthService } from './services/AuthService';
 
 function createWindow() {
@@ -42,6 +43,7 @@ app.whenReady().then(async () => {
   registerPatientHandlers();
   registerVisitHandlers();
   registerMedicationHandlers();
+  registerAuditHandlers();
 
   // Setup default admin user if not present
   await AuthService.setupDefaultAdmin();

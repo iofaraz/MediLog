@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Search, Plus, User as UserIcon, Calendar, Edit2, Trash2 } from 'lucide-react';
 import PatientForm from '../components/patients/PatientForm';
+import { useAuth } from '../context/AuthContext';
 import type { PatientFormData } from '../../shared/schemas';
 
 interface Patient {
@@ -14,6 +15,7 @@ interface Patient {
 }
 
 const Patients = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,10 +43,11 @@ const Patients = () => {
 
   const handleSavePatient = async (data: PatientFormData) => {
     let result;
+    const userId = user?.id || 'unknown';
     if (editingPatient) {
-      result = await window.api.patient.update(editingPatient.id, data);
+      result = await window.api.patient.update(editingPatient.id, data, userId);
     } else {
-      result = await window.api.patient.create(data);
+      result = await window.api.patient.create(data, userId);
     }
 
     if (result.success) {
@@ -58,7 +61,7 @@ const Patients = () => {
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this patient? This action cannot be undone.')) {
-      const result = await window.api.patient.delete(id);
+      const result = await window.api.patient.delete(id, user?.id || 'unknown');
       if (result.success) {
         fetchPatients();
       } else {

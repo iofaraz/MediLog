@@ -12,9 +12,9 @@ const api = {
   patient: {
     getAll: (options?: { searchQuery?: string; gender?: string }) => ipcRenderer.invoke('patient:getAll', options),
     getById: (id: string) => ipcRenderer.invoke('patient:getById', id),
-    create: (data: unknown) => ipcRenderer.invoke('patient:create', data),
-    update: (id: string, data: unknown) => ipcRenderer.invoke('patient:update', id, data),
-    delete: (id: string) => ipcRenderer.invoke('patient:delete', id),
+    create: (data: unknown, userId: string) => ipcRenderer.invoke('patient:create', data, userId),
+    update: (id: string, data: unknown, userId: string) => ipcRenderer.invoke('patient:update', id, data, userId),
+    delete: (id: string, userId: string) => ipcRenderer.invoke('patient:delete', id, userId),
   },
   visit: {
     getByPatient: (patientId: string) => ipcRenderer.invoke('visit:getByPatient', patientId),
@@ -32,6 +32,9 @@ const api = {
     getByVisit: (visitId: string) => ipcRenderer.invoke('prescription:getByVisit', visitId),
     create: (data: any) => ipcRenderer.invoke('prescription:create', data),
     delete: (id: string) => ipcRenderer.invoke('prescription:delete', id),
+  },
+  audit: {
+    getLogs: (options?: any) => ipcRenderer.invoke('audit:getLogs', options),
   },
 };
 

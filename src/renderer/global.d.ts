@@ -28,9 +28,9 @@ declare global {
       patient: {
         getAll: (options?: { searchQuery?: string; gender?: string }) => Promise<{ success: boolean; data?: any[]; error?: string }>;
         getById: (id: string) => Promise<{ success: boolean; data?: any; error?: string }>;
-        create: (data: unknown) => Promise<{ success: boolean; data?: any; error?: string; details?: any }>;
-        update: (id: string, data: unknown) => Promise<{ success: boolean; data?: any; error?: string; details?: any }>;
-        delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+        create: (data: unknown, userId: string) => Promise<{ success: boolean; data?: any; error?: string; details?: any }>;
+        update: (id: string, data: unknown, userId: string) => Promise<{ success: boolean; data?: any; error?: string; details?: any }>;
+        delete: (id: string, userId: string) => Promise<{ success: boolean; error?: string }>;
       };
       visit: {
         getByPatient: (patientId: string) => Promise<{ success: boolean; data?: any[]; error?: string }>;
@@ -48,6 +48,9 @@ declare global {
         getByVisit: (visitId: string) => Promise<{ success: boolean; data?: any[]; error?: string }>;
         create: (data: any) => Promise<{ success: boolean; data?: any; error?: string }>;
         delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+      };
+      audit: {
+        getLogs: (options?: { entityType?: string; userId?: string; startDate?: Date; endDate?: Date; limit?: number }) => Promise<{ success: boolean; data?: any[]; error?: string }>;
       };
     };
   }

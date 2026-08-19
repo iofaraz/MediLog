@@ -60,6 +60,12 @@ declare global {
         getAll: () => Promise<{ success: boolean; data?: Record<string, string>; error?: string }>;
         update: (newSettings: Record<string, string>, userId: string) => Promise<{ success: boolean; error?: string }>;
       };
+      users: {
+        getAll: () => Promise<{ success: boolean; data?: any[]; error?: string }>;
+        create: (data: any, adminId: string) => Promise<{ success: boolean; error?: string }>;
+        update: (id: string, data: any, adminId: string) => Promise<{ success: boolean; error?: string }>;
+        delete: (id: string, adminId: string) => Promise<{ success: boolean; error?: string }>;
+      };
     };
   }
 }

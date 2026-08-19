@@ -1,16 +1,24 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, CalendarDays, Pill, Settings, Activity, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarDays, Pill, Settings, Activity, Shield, UserCog } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
+  const { user } = useAuth();
+  
   const navItems = [
     { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
     { name: 'Patients', path: '/patients', icon: <Users size={20} /> },
     { name: 'Visits', path: '/visits', icon: <CalendarDays size={20} /> },
     { name: 'Medications', path: '/medications', icon: <Pill size={20} /> },
     { name: 'Audit Logs', path: '/audit', icon: <Shield size={20} /> },
-    { name: 'Settings', path: '/settings', icon: <Settings size={20} /> },
   ];
+
+  if (user?.role === 'admin') {
+    navItems.push({ name: 'Staff', path: '/staff', icon: <UserCog size={20} /> });
+  }
+
+  navItems.push({ name: 'Settings', path: '/settings', icon: <Settings size={20} /> });
 
   return (
     <aside className="sidebar">

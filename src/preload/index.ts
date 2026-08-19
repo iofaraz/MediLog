@@ -43,6 +43,12 @@ const api = {
   settings: {
     getAll: () => ipcRenderer.invoke('settings:getAll'),
     update: (newSettings: Record<string, string>, userId: string) => ipcRenderer.invoke('settings:update', newSettings, userId),
+  },
+  users: {
+    getAll: () => ipcRenderer.invoke('users:getAll'),
+    create: (data: any, adminId: string) => ipcRenderer.invoke('users:create', data, adminId),
+    update: (id: string, data: any, adminId: string) => ipcRenderer.invoke('users:update', id, data, adminId),
+    delete: (id: string, adminId: string) => ipcRenderer.invoke('users:delete', id, adminId),
   }
 };
 

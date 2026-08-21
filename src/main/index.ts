@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from 'electron';
-import { join } from 'path';
+import { join, resolve } from 'path';
+import { existsSync } from 'fs';
 import { registerDashboardHandlers } from './ipc/dashboard';
 import { registerPatientHandlers } from './ipc/patient';
 import { registerVisitHandlers } from './ipc/visit';
@@ -13,6 +14,17 @@ import { SettingsService } from './services/SettingsService';
 app.setName('MediLog');
 app.setAppUserModelId('com.medilog.app');
 
+function resolveWindowIcon() {
+  const candidates = [
+    resolve(process.cwd(), 'public', 'icon.png'),
+    resolve(__dirname, '../renderer/icon.png'),
+    resolve(app.getAppPath(), 'out/renderer/icon.png'),
+    resolve(app.getAppPath(), 'public/icon.png'),
+  ];
+
+  return candidates.find((candidate) => existsSync(candidate));
+}
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1200,
@@ -22,6 +34,7 @@ function createWindow() {
     show: false,
     autoHideMenuBar: true,
     frame: true,
+    icon: resolveWindowIcon(),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

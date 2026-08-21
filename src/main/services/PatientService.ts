@@ -1,7 +1,7 @@
-import { and, desc, eq, like, or } from 'drizzle-orm';
+import { and, count, desc, eq, like, or } from 'drizzle-orm';
 import crypto from 'crypto';
 import { db } from '../db';
-import { patients } from '../db/schema';
+import { patients, visits } from '../db/schema';
 import { patientSchema } from '../../shared/schemas';
 import { AuditService } from './AuditService';
 
@@ -128,6 +128,18 @@ export class PatientService {
       const existing = await db.select().from(patients).where(eq(patients.id, id)).get();
       if (!existing) {
         return { success: false, error: 'Patient not found' };
+      }
+
+      const [{ visitCount }] = await db
+        .select({ visitCount: count() })
+        .from(visits)
+        .where(eq(visits.patientId, id));
+
+      if (visitCount > 0) {
+        return {
+          success: false,
+          error: 'This patient cannot be deleted because they already have visits or medical history on file.',
+        };
       }
 
       db.transaction((tx) => {

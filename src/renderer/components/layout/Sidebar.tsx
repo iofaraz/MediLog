@@ -1,4 +1,3 @@
-import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Users, CalendarDays, Settings, Activity } from 'lucide-react';
 
@@ -14,10 +13,11 @@ const Sidebar = () => {
   return (
     <aside className="sidebar" style={{ background: '#f8fafc', borderRight: '1px solid #e2e8f0' }}>
       <div className="sidebar-header">
-        <div className="logo-icon">
-          <Activity color="white" size={20} />
-        </div>
-        <div className="logo-text" style={{ color: '#0f172a' }}>MediLog</div>
+        <img
+          src="./logo.png"
+          alt="MediLog"
+          style={{ width: '100%', maxWidth: '180px', height: 'auto', display: 'block', objectFit: 'contain' }}
+        />
       </div>
 
       <nav className="nav-links">

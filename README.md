@@ -120,7 +120,6 @@ This builds the Electron app and then packages it with `electron-builder`.
 - It is a single-user local application, not a multi-user or cloud-synced system.
 - There is no authentication or role-based access control.
 - Backup validation checks for a compatible MediLog schema, but it is still a local-file workflow, so users should keep multiple backups if the data matters.
-- No dedicated application icon has been added yet in the repository.
 
 ## Useful scripts
 

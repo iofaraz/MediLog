@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { patients, visits } from '../db/schema';
-import { count, gte, lt, and } from 'drizzle-orm';
+import { and, count, eq, gte, lt } from 'drizzle-orm';
 
 export class DashboardService {
   static async getDashboardStats() {
@@ -23,8 +23,7 @@ export class DashboardService {
           and(
             gte(visits.date, startOfDay),
             lt(visits.date, startOfTomorrow),
-            // isVoided is boolean, so eq(visits.isVoided, false) but wait, schema uses integer with boolean mode
-            // the Drizzle typings handle the translation
+            eq(visits.isVoided, false),
           )
         );
 

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { X, Save, Plus, Trash2 } from 'lucide-react';
+import { Plus, Save, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getErrorMessage, unwrapIpcResult } from '../../lib/ipc';
 
 interface VisitFormData {
   date: string;
@@ -11,290 +12,513 @@ interface VisitFormData {
 }
 
 interface PrescriptionData {
-  medicationId: string;
+  medicationName: string;
   dosage: string;
   frequency: string;
   duration: string;
-  notes?: string;
+  notes: string;
 }
 
-interface Medication {
+interface PatientOption {
   id: string;
-  name: string;
-  defaultDosage?: string;
+  firstName: string;
+  lastName: string;
 }
 
 interface VisitFormProps {
-  patientId: string;
-  doctorId: string;
+  patientId?: string;
   initialData?: any;
   onClose: () => void;
-  onSave: () => void;
+  onSave: (visit?: any) => void;
 }
 
-const VisitForm: React.FC<VisitFormProps> = ({ patientId, doctorId, initialData, onClose, onSave }) => {
-  const [medications, setMedications] = useState<Medication[]>([]);
+const modalOverlay: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(15, 23, 42, 0.55)',
+  backdropFilter: 'blur(6px)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 100,
+  padding: '24px',
+};
+
+const modalSurface: React.CSSProperties = {
+  width: 'min(1040px, 100%)',
+  maxHeight: '90vh',
+  overflowY: 'auto',
+  background: '#ffffff',
+  color: '#0f172a',
+  borderRadius: '16px',
+  border: '1px solid #e2e8f0',
+  boxShadow: '0 24px 80px rgba(15, 23, 42, 0.18)',
+};
+
+const blankPrescription = (): PrescriptionData => ({
+  medicationName: '',
+  dosage: '',
+  frequency: '',
+  duration: '',
+  notes: '',
+});
+
+const VisitForm: React.FC<VisitFormProps> = ({ patientId, initialData, onClose, onSave }) => {
+  const [patients, setPatients] = useState<PatientOption[]>([]);
   const [prescriptions, setPrescriptions] = useState<PrescriptionData[]>([]);
+  const [clinicianName, setClinicianName] = useState('Primary Clinician');
+  const [selectedPatientId, setSelectedPatientId] = useState(patientId || initialData?.patientId || '');
+  const [isLoadingLookups, setIsLoadingLookups] = useState(true);
 
-  useEffect(() => {
-    // Load medications list
-    window.api.medication.getAll().then((res: any) => {
-      if (res.success && res.data) {
-        setMedications(res.data);
-      }
-    });
+  const isEditing = Boolean(initialData);
+  const canChoosePatient = !patientId && !isEditing;
 
-    if (initialData && initialData.prescriptions) {
-      setPrescriptions(initialData.prescriptions.map((p: any) => ({
-        medicationId: p.medicationId,
-        dosage: p.dosage,
-        frequency: p.frequency,
-        duration: p.duration,
-        notes: p.notes || ''
-      })));
-    }
-  }, [initialData]);
+  const initialVisitValues = useMemo(
+    () =>
+      initialData
+        ? {
+            date: new Date(initialData.date).toISOString().slice(0, 16),
+            reason: initialData.reason || '',
+            diagnosis: initialData.diagnosis || '',
+            notes: initialData.notes || '',
+          }
+        : {
+            date: new Date().toISOString().slice(0, 16),
+            reason: '',
+            diagnosis: '',
+            notes: '',
+          },
+    [initialData],
+  );
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<VisitFormData>({
-    defaultValues: initialData ? {
-      date: new Date(initialData.date).toISOString().slice(0, 16),
-      reason: initialData.reason || '',
-      diagnosis: initialData.diagnosis || '',
-      notes: initialData.notes || '',
-    } : {
-      date: new Date().toISOString().slice(0, 16),
-      reason: '',
-      diagnosis: '',
-      notes: '',
-    },
+    defaultValues: initialVisitValues,
   });
 
-  const onSubmit = async (data: VisitFormData) => {
-    try {
-      let visitId = initialData?.id;
-      let result;
-      
-      if (initialData) {
-        result = await window.api.visit.update(visitId, {
-          reason: data.reason,
-          diagnosis: data.diagnosis,
-          notes: data.notes,
-        });
-      } else {
-        result = await window.api.visit.create({
-          patientId,
-          doctorId,
-          date: data.date,
-          reason: data.reason,
-          diagnosis: data.diagnosis,
-          notes: data.notes,
-        });
-        visitId = result.data?.id;
-      }
+  useEffect(() => {
+    reset(initialVisitValues);
+  }, [initialVisitValues, reset]);
 
-      if (result.success && visitId) {
-        if (!initialData && prescriptions.length > 0) {
-          for (const px of prescriptions) {
-            if (px.medicationId) {
-              await window.api.prescription.create({
-                visitId,
-                ...px
-              });
-            }
-          }
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoadingLookups(true);
+      try {
+        const [settingsRes, patientsRes] = await Promise.all([
+          window.api.settings.getAll(),
+          canChoosePatient ? window.api.patient.getAll() : Promise.resolve({ success: true, data: [] }),
+        ]);
+
+        const settingsResult = unwrapIpcResult<Record<string, string>>(settingsRes);
+        if (settingsResult.success && settingsResult.data?.doctorName?.trim()) {
+          setClinicianName(settingsResult.data.doctorName.trim());
         }
-        toast.success(initialData ? 'Visit updated successfully' : 'Visit created successfully');
-        onSave();
-        onClose();
-      } else {
-        toast.error(result.error || 'Failed to save visit');
+
+        const patientsResult = unwrapIpcResult<PatientOption[]>(patientsRes);
+        if (patientsResult.success && patientsResult.data) {
+          setPatients(patientsResult.data);
+        }
+      } catch (error) {
+        console.error('Failed to load visit form data:', error);
+      } finally {
+        setIsLoadingLookups(false);
       }
-    } catch (err) {
-      console.error('Error saving visit:', err);
-      toast.error('An unexpected error occurred');
+    };
+
+    loadData();
+
+    if (initialData?.prescriptions) {
+      setPrescriptions(
+        initialData.prescriptions.map((p: any) => ({
+          medicationName: p.medicationName || '',
+          dosage: p.dosage || '',
+          frequency: p.frequency || '',
+          duration: p.duration || '',
+          notes: p.notes || '',
+        })),
+      );
+    } else {
+      setPrescriptions([]);
     }
-  };
+  }, [canChoosePatient, initialData]);
 
   const addPrescription = () => {
-    setPrescriptions([...prescriptions, { medicationId: '', dosage: '', frequency: '', duration: '', notes: '' }]);
+    setPrescriptions((current) => [...current, blankPrescription()]);
   };
 
   const removePrescription = (index: number) => {
-    setPrescriptions(prescriptions.filter((_, i) => i !== index));
+    setPrescriptions((current) => current.filter((_, i) => i !== index));
   };
 
   const updatePrescription = (index: number, field: keyof PrescriptionData, value: string) => {
-    const newPx = [...prescriptions];
-    newPx[index] = { ...newPx[index], [field]: value };
-    if (field === 'medicationId') {
-      const med = medications.find(m => m.id === value);
-      if (med && med.defaultDosage && !newPx[index].dosage) {
-        newPx[index].dosage = med.defaultDosage;
-      }
+    setPrescriptions((current) => {
+      const next = [...current];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const validatePrescriptionRows = () => {
+    const anyContent = prescriptions.some((item) => item.medicationName || item.dosage || item.frequency || item.duration || item.notes);
+    if (!anyContent) {
+      return [];
     }
-    setPrescriptions(newPx);
+
+    const invalidRow = prescriptions.find(
+      (item) =>
+        !item.medicationName.trim() ||
+        !item.dosage.trim() ||
+        !item.frequency.trim() ||
+        !item.duration.trim(),
+    );
+
+    if (invalidRow) {
+      throw new Error('Please complete every prescription row before saving');
+    }
+
+    return prescriptions.filter((item) => item.medicationName || item.dosage || item.frequency || item.duration || item.notes);
+  };
+
+  const onSubmit = async (data: VisitFormData) => {
+    try {
+      if (canChoosePatient && !selectedPatientId) {
+        toast.error('Please select a patient for the visit');
+        return;
+      }
+
+      const cleanedPrescriptions = validatePrescriptionRows();
+
+      const payload = {
+        patientId: patientId || selectedPatientId,
+        doctorName: clinicianName,
+        date: data.date,
+        reason: data.reason,
+        diagnosis: data.diagnosis,
+        notes: data.notes,
+        prescriptions: cleanedPrescriptions,
+      };
+
+      const response = isEditing
+        ? await window.api.visit.update(initialData.id, {
+            date: data.date,
+            reason: data.reason,
+            diagnosis: data.diagnosis,
+            notes: data.notes,
+            prescriptions: cleanedPrescriptions,
+          })
+        : await window.api.visit.create(payload);
+
+      const result = unwrapIpcResult<any>(response);
+
+      if (!result.success) {
+        toast.error(result.error || 'Failed to save visit');
+        return;
+      }
+
+      toast.success(isEditing ? 'Visit updated successfully' : 'Visit added successfully');
+      onSave(result.data);
+      onClose();
+    } catch (error) {
+      console.error('Error saving visit:', error);
+      toast.error(getErrorMessage(error, 'Failed to save visit'));
+    }
   };
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(15, 17, 23, 0.8)', backdropFilter: 'blur(4px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100
-    }}>
-      <div className="glass-panel" style={{
-        width: '700px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', borderRadius: 'var(--radius-lg)',
-        boxShadow: '0 24px 48px rgba(0,0,0,0.5)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)' }}>
-            {initialData ? 'Edit Visit' : 'New Visit'}
-          </h2>
-          <button onClick={onClose} style={{ color: 'var(--text-secondary)', cursor: 'pointer', background: 'none', border: 'none' }}>
-            <X size={24} />
+    <div style={modalOverlay}>
+      <div style={modalSurface}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+              {isEditing ? 'Edit Visit' : 'Add Visit'}
+            </h2>
+            <p style={{ color: '#64748b', margin: '4px 0 0 0', fontSize: '0.92rem' }}>
+              Clinician: {clinicianName}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close modal"
+            style={{ width: 36, height: 36, borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff', color: '#334155' }}
+          >
+            <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Date & Time *</label>
-              <input
-                type="datetime-local"
-                {...register('date', { required: 'Date is required' })}
-                disabled={!!initialData}
-                style={{ width: '100%', padding: '10px', background: 'rgba(15,17,23,0.6)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', color: 'white', colorScheme: 'dark' }}
-              />
-              {errors.date && <span style={{ color: 'var(--danger)', fontSize: '0.8rem' }}>{errors.date.message}</span>}
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Reason for Visit</label>
-              <input
-                {...register('reason')}
-                placeholder="e.g. Routine checkup"
-                style={{ width: '100%', padding: '10px', background: 'rgba(15,17,23,0.6)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', color: 'white' }}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Diagnosis</label>
-            <input
-              {...register('diagnosis')}
-              placeholder="e.g. Upper respiratory infection"
-              style={{ width: '100%', padding: '10px', background: 'rgba(15,17,23,0.6)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', color: 'white' }}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Clinical Notes</label>
-            <textarea
-              {...register('notes')}
-              rows={3}
-              placeholder="Detailed clinical observations, symptoms, examination findings..."
-              style={{ width: '100%', padding: '10px', background: 'rgba(15,17,23,0.6)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', color: 'white', resize: 'none' }}
-            />
-          </div>
-
-          <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>Prescriptions</h3>
-              {!initialData && (
-                <button
-                  type="button"
-                  onClick={addPrescription}
-                  style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent-primary)', border: 'none', padding: '6px 12px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem' }}
-                >
-                  <Plus size={16} /> Add Medication
-                </button>
-              )}
-            </div>
-
-            {initialData && prescriptions.length > 0 && (
-              <p style={{ color: 'var(--warning)', fontSize: '0.85rem', margin: '0 0 16px 0' }}>
-                Note: Prescriptions cannot be edited after the visit is saved to preserve medical history.
-              </p>
-            )}
-
-            {prescriptions.map((px, index) => (
-              <div key={index} style={{ display: 'flex', gap: '12px', marginBottom: '12px', alignItems: 'flex-start', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ flex: 1.5 }}>
+        <form onSubmit={handleSubmit(onSubmit)} style={{ padding: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px' }}>
+            {canChoosePatient && (
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ display: 'block', marginBottom: '8px', color: '#334155', fontSize: '0.92rem', fontWeight: 600 }}>
+                  Patient *
+                </label>
+                <div style={{ position: 'relative' }}>
                   <select
-                    value={px.medicationId}
-                    onChange={(e) => updatePrescription(index, 'medicationId', e.target.value)}
-                    disabled={!!initialData}
-                    style={{ width: '100%', padding: '8px', background: 'rgba(15,17,23,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)', color: 'white' }}
+                    value={selectedPatientId}
+                    onChange={(e) => setSelectedPatientId(e.target.value)}
+                    disabled={isLoadingLookups}
+                    style={{
+                      width: '100%',
+                      minHeight: 44,
+                      padding: '10px 14px',
+                      borderRadius: 12,
+                      border: '1px solid #cbd5e1',
+                      background: '#fff',
+                      color: '#0f172a',
+                    }}
                   >
-                    <option value="">Select Medication...</option>
-                    {medications.map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
+                    <option value="">{isLoadingLookups ? 'Loading patients...' : 'Select a patient'}</option>
+                    {patients.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.firstName} {item.lastName}
+                      </option>
                     ))}
                   </select>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <input
-                    placeholder="Dosage"
-                    value={px.dosage}
-                    disabled={!!initialData}
-                    onChange={(e) => updatePrescription(index, 'dosage', e.target.value)}
-                    style={{ width: '100%', padding: '8px', background: 'rgba(15,17,23,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)', color: 'white' }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <input
-                    placeholder="Frequency"
-                    value={px.frequency}
-                    disabled={!!initialData}
-                    onChange={(e) => updatePrescription(index, 'frequency', e.target.value)}
-                    style={{ width: '100%', padding: '8px', background: 'rgba(15,17,23,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)', color: 'white' }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <input
-                    placeholder="Duration"
-                    value={px.duration}
-                    disabled={!!initialData}
-                    onChange={(e) => updatePrescription(index, 'duration', e.target.value)}
-                    style={{ width: '100%', padding: '8px', background: 'rgba(15,17,23,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-sm)', color: 'white' }}
-                  />
-                </div>
-                {!initialData && (
+              </div>
+            )}
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: '#334155', fontSize: '0.92rem', fontWeight: 600 }}>
+                Date & Time *
+              </label>
+              <input
+                type="datetime-local"
+                {...register('date', { required: 'Date is required' })}
+                style={{
+                  width: '100%',
+                  minHeight: 44,
+                  padding: '10px 14px',
+                  borderRadius: 12,
+                  border: `1px solid ${errors.date ? '#ef4444' : '#cbd5e1'}`,
+                  background: '#fff',
+                  color: '#0f172a',
+                }}
+              />
+              {errors.date && <p style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: 6 }}>{errors.date.message}</p>}
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: '#334155', fontSize: '0.92rem', fontWeight: 600 }}>
+                Reason
+              </label>
+              <input
+                {...register('reason')}
+                placeholder="e.g. Routine follow-up"
+                className="form-input"
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: '#334155', fontSize: '0.92rem', fontWeight: 600 }}>
+                Diagnosis
+              </label>
+              <input
+                {...register('diagnosis')}
+                placeholder="e.g. Hypertension"
+                className="form-input"
+              />
+            </div>
+
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', marginBottom: '8px', color: '#334155', fontSize: '0.92rem', fontWeight: 600 }}>
+                Clinical Notes
+              </label>
+              <textarea
+                {...register('notes')}
+                rows={4}
+                placeholder="Detailed clinical observations, symptoms, examination findings..."
+                className="form-input"
+                style={{ minHeight: 112, resize: 'vertical' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>Prescriptions</h3>
+                <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '0.88rem' }}>
+                  Enter medications manually. You can add or edit prescription rows anytime.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={addPrescription}
+                style={{
+                  minHeight: 40,
+                  padding: '0 14px',
+                  borderRadius: 12,
+                  border: '1px solid #bfdbfe',
+                  background: '#eff6ff',
+                  color: '#2563eb',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontWeight: 600,
+                }}
+              >
+                <Plus size={16} />
+                Add Prescription
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {prescriptions.map((px, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1.2fr 1fr 1fr 1fr auto',
+                    gap: 12,
+                    alignItems: 'start',
+                    padding: 14,
+                    borderRadius: 14,
+                    border: '1px solid #e2e8f0',
+                    background: '#fafafa',
+                  }}
+                >
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 6, color: '#334155', fontSize: '0.82rem', fontWeight: 600 }}>
+                      Medication
+                    </label>
+                    <input
+                      value={px.medicationName}
+                      onChange={(e) => updatePrescription(index, 'medicationName', e.target.value)}
+                      placeholder="e.g. Amoxicillin"
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 6, color: '#334155', fontSize: '0.82rem', fontWeight: 600 }}>
+                      Dosage
+                    </label>
+                    <input
+                      value={px.dosage}
+                      onChange={(e) => updatePrescription(index, 'dosage', e.target.value)}
+                      placeholder="500mg"
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 6, color: '#334155', fontSize: '0.82rem', fontWeight: 600 }}>
+                      Frequency
+                    </label>
+                    <input
+                      value={px.frequency}
+                      onChange={(e) => updatePrescription(index, 'frequency', e.target.value)}
+                      placeholder="Twice daily"
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 6, color: '#334155', fontSize: '0.82rem', fontWeight: 600 }}>
+                      Duration
+                    </label>
+                    <input
+                      value={px.duration}
+                      onChange={(e) => updatePrescription(index, 'duration', e.target.value)}
+                      placeholder="7 days"
+                      className="form-input"
+                    />
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => removePrescription(index)}
-                    style={{ padding: '8px', color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}
+                    style={{
+                      marginTop: 22,
+                      minHeight: 40,
+                      width: 40,
+                      borderRadius: 12,
+                      border: '1px solid #fecaca',
+                      background: '#fff1f2',
+                      color: '#dc2626',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    aria-label="Remove prescription"
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={16} />
                   </button>
-                )}
-              </div>
-            ))}
-            {prescriptions.length === 0 && !initialData && (
-              <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-tertiary)', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                No prescriptions added to this visit.
-              </div>
-            )}
+
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={{ display: 'block', marginBottom: 6, color: '#334155', fontSize: '0.82rem', fontWeight: 600 }}>
+                      Notes
+                    </label>
+                    <input
+                      value={px.notes}
+                      onChange={(e) => updatePrescription(index, 'notes', e.target.value)}
+                      placeholder="Optional notes"
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+              ))}
+
+              {prescriptions.length === 0 && (
+                <div
+                  style={{
+                    padding: '18px',
+                    borderRadius: 14,
+                    border: '1px dashed #cbd5e1',
+                    color: '#64748b',
+                    background: '#f8fafc',
+                    textAlign: 'center',
+                  }}
+                >
+                  No prescriptions added yet. Use the button above to add one.
+                </div>
+              )}
+            </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24, paddingTop: 20, borderTop: '1px solid #e2e8f0' }}>
             <button
               type="button"
               onClick={onClose}
-              style={{ padding: '10px 20px', borderRadius: 'var(--radius-md)', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-strong)', cursor: 'pointer' }}
+              style={{
+                minHeight: 44,
+                padding: '0 16px',
+                borderRadius: 12,
+                border: '1px solid #cbd5e1',
+                background: '#fff',
+                color: '#334155',
+                fontWeight: 600,
+              }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              style={{ padding: '10px 20px', borderRadius: 'var(--radius-md)', background: 'var(--accent-primary)', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', border: 'none' }}
+              disabled={isSubmitting || isLoadingLookups}
+              style={{
+                minHeight: 44,
+                padding: '0 18px',
+                borderRadius: 12,
+                border: '1px solid #1d4ed8',
+                background: '#2563eb',
+                color: '#fff',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 10,
+                opacity: isSubmitting || isLoadingLookups ? 0.75 : 1,
+              }}
             >
               <Save size={18} />
-              {isSubmitting ? 'Saving...' : 'Save Visit'}
+              {isSubmitting ? 'Saving...' : isEditing ? 'Update Visit' : 'Save Visit'}
             </button>
           </div>
         </form>
@@ -304,4 +528,3 @@ const VisitForm: React.FC<VisitFormProps> = ({ patientId, doctorId, initialData,
 };
 
 export default VisitForm;
-

@@ -1,136 +1,132 @@
 # MediLog
 
-MediLog is a modern, offline-first Electronic Health Record (EHR) and Clinic Management desktop application built with Electron and React. It is designed to be fast, secure, and fully self-contained, with all data stored locally on the user's machine.
+MediLog is a local, single-user clinic management app built with Electron, React, SQLite, and Drizzle. It is meant for personal or small-practice use where the data stays on one machine and the app opens directly into the main dashboard without a sign-in flow.
 
-## 🚀 Features
+## What it does
 
-- **Authentication & Authorization:** Role-based access control (Admin vs. Doctor). Master admin account creation on first launch.
-- **Patient Management:** Full CRUD operations for patient records with detailed profiles.
-- **Visits & Prescriptions:** Track patient visits, medical notes, and prescribe medications dynamically.
-- **Medication Inventory:** Manage the clinic's medication database, including descriptions and default dosages.
-- **Dashboard & Analytics:** Visual insights into clinic performance, daily visits, and demographics using Recharts.
-- **Security & Audit Logs:** Every action (Create, Update, Delete) is securely logged with timestamps and user attribution.
-- **Data Export:** Export Patients and Visits data directly to CSV format.
-- **Backup & Restore:** Easily backup the SQLite database to a local file and restore it when needed.
-- **Modern UI:** Sleek dark-mode interface with toast notifications, skeleton loaders, and keyboard shortcuts for power users.
+- Manages patients, visits, medications, prescriptions, settings, audit logs, exports, and local backups.
+- Stores all data in a local SQLite database on the user’s machine.
+- Uses a preload bridge so the renderer never talks to Node.js directly.
 
-## 🏗 Architecture & Tech Stack
+## Main features
 
-MediLog follows a strict 3-process Electron architecture for maximum security and separation of concerns.
+- Patient CRUD with searchable lists and profile history.
+- Visit tracking with clinician name, notes, diagnoses, and linked prescriptions.
+- Medication catalog and prescription management.
+- Clinic settings, including clinician name and contact details.
+- Audit log for important app actions.
+- CSV export for patients and visits.
+- Backup and restore for the local database.
+- Direct-to-dashboard startup with no authentication screen.
 
-### Tech Stack
-- **Frontend:** React 18, TypeScript, Vite, React Router, React Hook Form, Recharts, Lucide React, React Hot Toast.
-- **Backend (Main Process):** Node.js, Electron.
-- **Database:** SQLite3 (`better-sqlite3`), Drizzle ORM.
-- **Security:** `scrypt` for password hashing, strict IPC Context Bridge.
+## Tech stack
 
-### The 3-Process Model
+- Electron 43
+- React 19
+- Vite / electron-vite 5
+- TypeScript
+- SQLite via `better-sqlite3`
+- Drizzle ORM
+- Zod for runtime validation
 
-1. **Renderer Process (React UI):**
-   - Handles the visual interface.
-   - Entirely sandboxed. It cannot access the Node.js API or the file system directly.
-   - Communicates with the Main process strictly through the Preload script.
-
-2. **Preload Script:**
-   - Acts as a secure bridge between the Renderer and the Main process.
-   - Uses Electron's `contextBridge` to expose a typed `window.api` object to the React frontend.
-   - Translates `window.api` calls into `ipcRenderer.invoke` messages.
-
-3. **Main Process (Node.js/Electron):**
-   - Manages the application lifecycle, native file dialogs, and window management.
-   - Handles the SQLite database connection using Drizzle ORM.
-   - Listens to `ipcMain.handle` events triggered by the frontend, executes the requested database operations, and returns the results.
-
-### Data Flow Example (Adding a Patient)
-1. User submits the Patient Form in the **Renderer** (`Patients.tsx`).
-2. Renderer calls `window.api.patient.create(patientData, userId)`.
-3. **Preload** translates this to `ipcRenderer.invoke('patient:create', patientData, userId)`.
-4. **Main** process catches the event in `src/main/ipc/patient.ts`.
-5. Main process calls `PatientService.createPatient()`, which inserts the row into SQLite via Drizzle ORM and automatically logs the action in the `audit_logs` table.
-6. Main process returns a `{ success: true, data: newPatient }` object back through the IPC channel to the Renderer.
-
-## 📂 Project Structure
+## Project structure
 
 ```text
-MediLog/
-├── src/
-│   ├── main/                 # Electron Main Process
-│   │   ├── db/               # Drizzle ORM schemas, migrations, and SQLite connection
-│   │   ├── ipc/              # IPC event handlers (receivers)
-│   │   └── services/         # Business logic and database operations
-│   ├── preload/              # Preload Script
-│   │   └── index.ts          # contextBridge definitions (window.api)
-│   ├── renderer/             # React Frontend (Vite)
-│   │   ├── assets/           # Global CSS and images
-│   │   ├── components/       # Reusable UI components and forms
-│   │   ├── context/          # React Context (e.g., AuthContext)
-│   │   ├── pages/            # Main application views (Dashboard, Patients, etc.)
-│   │   └── App.tsx           # React Router setup
-│   └── shared/               # Shared TypeScript schemas and types
-├── drizzle/                  # SQL Migration files generated by Drizzle Kit
-├── electron.vite.config.ts   # Electron-Vite build configuration
-└── package.json
+src/
+  main/        Electron main process, IPC handlers, services, and database code
+  preload/     Secure contextBridge API exposed to the renderer
+  renderer/    React UI
+  shared/      Shared Zod schemas and types
 ```
 
-## 💾 Database schema
+## Development setup
 
-The database utilizes SQLite, stored locally at `%APPDATA%/medilog/userData/medilog.sqlite` (Windows) or `~/.config/medilog/userData/medilog.sqlite` (Linux/Mac).
-
-**Core Tables:**
-- `users`: Staff credentials and roles.
-- `patients`: Patient demographics.
-- `visits`: Medical visits linked to a patient and doctor.
-- `prescriptions`: Medications prescribed during a specific visit.
-- `medications`: Clinic medication inventory.
-- `audit_logs`: Immutable ledger of all system actions.
-- `settings`: Key-value pair configuration for the clinic.
-
-## 🚀 Installation & Usage
-
-### Prerequisites
-- Node.js (v18 or higher recommended)
-- npm or yarn
-
-### Setup
-
-1. **Install dependencies:**
+1. Install dependencies:
    ```bash
    npm install
    ```
 
-2. **Start the development server:**
+2. Start the app in development:
    ```bash
    npm run dev
    ```
-   This will start Vite for the renderer process and compile the main/preload scripts, launching the Electron app in development mode with Hot Module Replacement (HMR).
 
-3. **Database Migrations:**
-   Migrations are handled automatically on app startup. If you need to generate new migrations after altering the schema in `src/main/db/schema.ts`, run:
+3. Run linting:
    ```bash
-   npm run db:generate
+   npm run lint
    ```
 
-### 📦 Packaging for Production
+4. Build the app:
+   ```bash
+   npm run build
+   ```
 
-To build and package the application for distribution:
+## Packaging
+
+To produce a Windows installer:
 
 ```bash
-# Build the TypeScript and React code
-npm run build
-
-# Package the application for your current OS
 npm run package
 ```
-*Note: Make sure `electron-builder` or the equivalent bundler configuration in your `package.json` is set up for your target platforms (Windows, Mac, Linux).*
 
-## ⌨️ Keyboard Shortcuts
+This builds the Electron app and then packages it with `electron-builder`.
 
-- `Ctrl + N` (or `Cmd + N` on Mac): Open the "New" form on the current page (e.g., New Patient, New Medication).
-- `Esc`: Close any open modal or form.
+## Database behavior
 
-## 🛡 Security Notes
+- The database is stored in the Electron user data directory as `medilog.sqlite`.
+- On Windows, that is typically under the app’s user data folder inside `%APPDATA%` or the Electron user-data location for the installed app.
+- The database is created automatically on first launch.
+- Migrations run at startup before the main window opens.
+- Existing installs are upgraded in place so patients, visits, medications, prescriptions, audit logs, and settings are preserved.
 
-- **Passwords:** All passwords are hashed using Node's native `crypto.scryptSync` with random salts. Raw passwords are never stored.
-- **SQL Injection:** Drizzle ORM inherently uses parameterized queries, preventing SQL injection attacks.
-- **XSS:** React safely escapes all data rendered in the UI.
-- **Node Integration:** Node integration is strictly disabled in the Renderer process. The Context Bridge ensures only explicitly defined APIs are accessible to the frontend.
+## Fresh install behavior
+
+- MediLog starts directly in the dashboard.
+- The database and default clinic settings are created automatically.
+- The clinician name falls back to `Primary Clinician` until changed in Settings.
+
+## Data migration notes
+
+- The current repository preserves legacy installs by converting old visit `doctorId` references into a stored `doctorName`.
+- Legacy `users` and auth-related structures are removed from the final schema.
+- Existing patient, visit, medication, prescription, audit, and settings data are preserved during migration.
+
+## Backup and restore
+
+### Backup
+
+- Use the Settings page to create a SQLite backup.
+- The backup is written as a `.db` file.
+- Backups are created with SQLite’s backup mechanism so the copy is consistent.
+
+### Restore
+
+- Choose a previously created SQLite backup from the Settings page.
+- MediLog validates that the file is a readable SQLite database and that it looks like a compatible MediLog database.
+- Before restoring, MediLog creates an automatic safety backup of the current database.
+- If validation fails, the current database is left untouched.
+- After a successful restore, the app restarts so the database is reopened cleanly.
+
+## Security and privacy notes
+
+- MediLog is designed for local use and keeps data on the machine where it runs.
+- Renderer code does not use Node.js directly.
+- The preload bridge exposes only the APIs needed by the app.
+- Validation is performed in the main process before data reaches SQLite.
+- This project is not a certified medical product and does not claim regulatory compliance.
+
+## Known limitations
+
+- It is a single-user local application, not a multi-user or cloud-synced system.
+- There is no authentication or role-based access control.
+- Backup validation checks for a compatible MediLog schema, but it is still a local-file workflow, so users should keep multiple backups if the data matters.
+- No dedicated application icon has been added yet in the repository.
+
+## Useful scripts
+
+- `npm run dev` - development mode
+- `npm run build` - build main, preload, and renderer bundles
+- `npm run package` - build and package a Windows installer
+- `npm run lint` - run Oxlint
+- `npm run db:generate` - generate Drizzle migrations
+- `npm run db:migrate` - run Drizzle migration commands

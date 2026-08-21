@@ -1,8 +1,9 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { db } from '../db';
-import { patients, visits, users } from '../db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { patients, visits } from '../db/schema';
+import { desc } from 'drizzle-orm';
 import fs from 'fs/promises';
+import { AuditService } from '../services/AuditService';
 
 function toCSV(headers: string[], rows: Record<string, any>[]): string {
   const escape = (val: any) => {
@@ -14,7 +15,7 @@ function toCSV(headers: string[], rows: Record<string, any>[]): string {
     return str;
   };
   const headerLine = headers.map(escape).join(',');
-  const dataLines = rows.map(row => headers.map(h => escape(row[h])).join(','));
+  const dataLines = rows.map((row) => headers.map((h) => escape(row[h])).join(','));
   return [headerLine, ...dataLines].join('\n');
 }
 
@@ -26,14 +27,14 @@ export function registerExportHandlers() {
     const { filePath } = await dialog.showSaveDialog(window, {
       title: 'Export Patients to CSV',
       defaultPath: `medilog_patients_${new Date().toISOString().slice(0, 10)}.csv`,
-      filters: [{ name: 'CSV File', extensions: ['csv'] }]
+      filters: [{ name: 'CSV File', extensions: ['csv'] }],
     });
 
     if (!filePath) return { success: false, error: 'Export cancelled.' };
 
     try {
       const allPatients = await db.select().from(patients).orderBy(desc(patients.createdAt));
-      const rows = allPatients.map(p => ({
+      const rows = allPatients.map((p) => ({
         id: p.id,
         firstName: p.firstName,
         lastName: p.lastName,
@@ -41,11 +42,17 @@ export function registerExportHandlers() {
         gender: p.gender,
         contactNumber: p.contactNumber ?? '',
         address: p.address ?? '',
-        createdAt: new Date(p.createdAt).toISOString().slice(0, 10)
+        createdAt: new Date(p.createdAt).toISOString().slice(0, 10),
       }));
 
       const headers = ['id', 'firstName', 'lastName', 'dob', 'gender', 'contactNumber', 'address', 'createdAt'];
       await fs.writeFile(filePath, toCSV(headers, rows), 'utf-8');
+      await AuditService.log({
+        action: 'Performed',
+        entityType: 'Export',
+        entityId: 'patients',
+        details: 'Exported patient data',
+      });
       return { success: true };
     } catch (error: any) {
       return { success: false, error: 'Failed to export: ' + error.message };
@@ -59,7 +66,7 @@ export function registerExportHandlers() {
     const { filePath } = await dialog.showSaveDialog(window, {
       title: 'Export Visits to CSV',
       defaultPath: `medilog_visits_${new Date().toISOString().slice(0, 10)}.csv`,
-      filters: [{ name: 'CSV File', extensions: ['csv'] }]
+      filters: [{ name: 'CSV File', extensions: ['csv'] }],
     });
 
     if (!filePath) return { success: false, error: 'Export cancelled.' };
@@ -74,13 +81,12 @@ export function registerExportHandlers() {
           diagnosis: visits.diagnosis,
           notes: visits.notes,
           isVoided: visits.isVoided,
-          doctorName: users.name,
+          doctorName: visits.doctorName,
         })
         .from(visits)
-        .leftJoin(users, eq(visits.doctorId, users.id))
         .orderBy(desc(visits.date));
 
-      const rows = allVisits.map(v => ({
+      const rows = allVisits.map((v) => ({
         id: v.id,
         date: new Date(v.date).toISOString().slice(0, 10),
         patientId: v.patientId,
@@ -88,11 +94,17 @@ export function registerExportHandlers() {
         reason: v.reason ?? '',
         diagnosis: v.diagnosis ?? '',
         notes: v.notes ?? '',
-        isVoided: v.isVoided ? 'Yes' : 'No'
+        isVoided: v.isVoided ? 'Yes' : 'No',
       }));
 
       const headers = ['id', 'date', 'patientId', 'doctor', 'reason', 'diagnosis', 'notes', 'isVoided'];
       await fs.writeFile(filePath, toCSV(headers, rows), 'utf-8');
+      await AuditService.log({
+        action: 'Performed',
+        entityType: 'Export',
+        entityId: 'visits',
+        details: 'Exported visit data',
+      });
       return { success: true };
     } catch (error: any) {
       return { success: false, error: 'Failed to export: ' + error.message };

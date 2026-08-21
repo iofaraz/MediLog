@@ -1,13 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
-
-export const users = sqliteTable('users', {
-  id: text('id').primaryKey(), // UUID
-  username: text('username').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
-  role: text('role').notNull(),
-  name: text('name').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-});
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const patients = sqliteTable('patients', {
   id: text('id').primaryKey(),
@@ -23,8 +14,10 @@ export const patients = sqliteTable('patients', {
 
 export const visits = sqliteTable('visits', {
   id: text('id').primaryKey(),
-  patientId: text('patient_id').notNull().references(() => patients.id, { onDelete: 'cascade' }),
-  doctorId: text('doctor_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  patientId: text('patient_id')
+    .notNull()
+    .references(() => patients.id, { onDelete: 'cascade' }),
+  doctorName: text('doctor_name').notNull(),
   date: integer('date', { mode: 'timestamp' }).notNull(),
   reason: text('reason'),
   notes: text('notes'),
@@ -33,17 +26,12 @@ export const visits = sqliteTable('visits', {
   isVoided: integer('is_voided', { mode: 'boolean' }).default(false).notNull(),
 });
 
-export const medications = sqliteTable('medications', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  description: text('description'),
-  defaultDosage: text('default_dosage'),
-});
-
 export const prescriptions = sqliteTable('prescriptions', {
   id: text('id').primaryKey(),
-  visitId: text('visit_id').notNull().references(() => visits.id, { onDelete: 'cascade' }),
-  medicationId: text('medication_id').notNull().references(() => medications.id, { onDelete: 'restrict' }),
+  visitId: text('visit_id')
+    .notNull()
+    .references(() => visits.id, { onDelete: 'cascade' }),
+  medicationName: text('medication_name').notNull(),
   dosage: text('dosage').notNull(),
   frequency: text('frequency').notNull(),
   duration: text('duration').notNull(),
@@ -52,7 +40,6 @@ export const prescriptions = sqliteTable('prescriptions', {
 
 export const auditLogs = sqliteTable('audit_logs', {
   id: text('id').primaryKey(),
-  userId: text('user_id').notNull(),
   action: text('action').notNull(),
   entityType: text('entity_type').notNull(),
   entityId: text('entity_id').notNull(),

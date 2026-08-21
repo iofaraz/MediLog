@@ -3,7 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { Users, Calendar, Pill, Activity, TrendingUp } from 'lucide-react';
+import { Users, Calendar, Activity, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '../components/ui/Skeleton';
 
@@ -12,7 +12,6 @@ const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 interface Metrics {
   totalPatients: number;
   totalVisits: number;
-  totalMedications: number;
   demographics: { name: string; value: number }[];
   visitsByDate: { date: string; visits: number }[];
   recentActivity: any[];
@@ -22,7 +21,8 @@ const StatCard = ({ icon: Icon, label, value, color }: { icon: any; label: strin
   <div className="glass-panel" style={{
     padding: '24px', borderRadius: 'var(--radius-lg)',
     display: 'flex', alignItems: 'center', gap: '20px',
-    borderLeft: `3px solid ${color}`
+    borderLeft: `3px solid ${color}`,
+    background: '#ffffff'
   }}>
     <div style={{ width: 52, height: 52, borderRadius: '12px', background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
       <Icon size={26} color={color} />
@@ -57,8 +57,8 @@ const Dashboard = () => {
           <Skeleton width={200} height={36} style={{ marginBottom: '8px' }} />
           <Skeleton width={150} height={16} />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-          {[1, 2, 3].map(i => <Skeleton key={i} height={100} borderRadius="var(--radius-lg)" />)}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+          {[1, 2].map(i => <Skeleton key={i} height={100} borderRadius="var(--radius-lg)" />)}
         </div>
         <Skeleton height={300} borderRadius="var(--radius-lg)" />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '16px' }}>
@@ -88,14 +88,13 @@ const Dashboard = () => {
       </div>
 
       {/* Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
         <StatCard icon={Users} label="Total Patients" value={metrics.totalPatients} color="#6366f1" />
         <StatCard icon={Calendar} label="Total Visits" value={metrics.totalVisits} color="#10b981" />
-        <StatCard icon={Pill} label="Medications" value={metrics.totalMedications} color="#f59e0b" />
       </div>
 
       {/* Visits Area Chart */}
-      <div className="glass-panel" style={{ padding: '28px', borderRadius: 'var(--radius-lg)' }}>
+      <div className="glass-panel" style={{ padding: '28px', borderRadius: 'var(--radius-lg)', background: '#ffffff' }}>
         <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <TrendingUp size={22} color="#6366f1" />
           Visits — Last 14 Days
@@ -109,11 +108,11 @@ const Dashboard = () => {
                 <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
             <YAxis allowDecimals={false} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
             <Tooltip
-              contentStyle={{ background: '#1e2130', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f8fafc' }}
+              contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', color: '#0f172a' }}
               cursor={{ stroke: '#6366f1', strokeWidth: 1 }}
             />
             <Area type="monotone" dataKey="visits" stroke="#6366f1" strokeWidth={2} fill="url(#visitGradient)" dot={false} activeDot={{ r: 5, fill: '#6366f1' }} />
@@ -125,7 +124,7 @@ const Dashboard = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '16px' }}>
 
         {/* Demographics Pie Chart */}
-        <div className="glass-panel" style={{ padding: '28px', borderRadius: 'var(--radius-lg)' }}>
+        <div className="glass-panel" style={{ padding: '28px', borderRadius: 'var(--radius-lg)', background: '#ffffff' }}>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Users size={22} color="#10b981" />
             Patient Demographics
@@ -144,7 +143,7 @@ const Dashboard = () => {
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ background: '#1e2130', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f8fafc' }}
+                  contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', color: '#0f172a' }}
                 />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '0.85rem', color: '#94a3b8' }} />
               </PieChart>
@@ -153,7 +152,7 @@ const Dashboard = () => {
         </div>
 
         {/* Recent Activity Feed */}
-        <div className="glass-panel" style={{ padding: '28px', borderRadius: 'var(--radius-lg)' }}>
+        <div className="glass-panel" style={{ padding: '28px', borderRadius: 'var(--radius-lg)', background: '#ffffff' }}>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Activity size={22} color="#f59e0b" />
             Recent Activity
@@ -167,8 +166,14 @@ const Dashboard = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {metrics.recentActivity.map((log) => {
                 const actionColors: Record<string, string> = {
-                  CREATE: '#10b981', UPDATE: '#6366f1', DELETE: '#ef4444',
-                  LOGIN: '#f59e0b', DEFAULT: '#64748b'
+                  Created: '#10b981',
+                  Updated: '#6366f1',
+                  Deleted: '#ef4444',
+                  Archived: '#f97316',
+                  Voided: '#f59e0b',
+                  Restored: '#8b5cf6',
+                  Performed: '#64748b',
+                  DEFAULT: '#64748b'
                 };
                 const color = actionColors[log.action] ?? actionColors.DEFAULT;
                 return (

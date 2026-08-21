@@ -10,11 +10,11 @@ export function registerVisitHandlers() {
     return await VisitService.getVisitsByPatient(patientId);
   });
 
-  ipcMain.handle('visit:create', async (_event, data: any) => {
+  ipcMain.handle('visit:create', async (_event, data: unknown) => {
     return await VisitService.createVisit(data);
   });
 
-  ipcMain.handle('visit:update', async (_event, id: string, data: any) => {
+  ipcMain.handle('visit:update', async (_event, id: string, data: unknown) => {
     return await VisitService.updateVisit(id, data);
   });
 

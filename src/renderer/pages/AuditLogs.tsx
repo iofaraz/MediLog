@@ -5,7 +5,6 @@ import { SkeletonRow } from '../components/ui/Skeleton';
 
 interface AuditLog {
   id: string;
-  userId: string;
   action: string;
   entityType: string;
   entityId: string;
@@ -57,15 +56,8 @@ const AuditLogs = () => {
           <select
             value={entityTypeFilter}
             onChange={(e) => setEntityTypeFilter(e.target.value)}
-            style={{
-              padding: '10px 16px',
-              background: 'rgba(15, 17, 23, 0.6)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              color: 'white',
-              cursor: 'pointer',
-              minWidth: '200px'
-            }}
+            className="form-input"
+            style={{ minWidth: '200px' }}
           >
             <option value="">All Entities</option>
             <option value="PATIENT">Patient</option>
@@ -77,21 +69,17 @@ const AuditLogs = () => {
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            style={{
-              padding: '10px 16px',
-              background: 'rgba(15, 17, 23, 0.6)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              color: 'white',
-              cursor: 'pointer',
-              minWidth: '200px'
-            }}
+            className="form-input"
+            style={{ minWidth: '200px' }}
           >
             <option value="">All Actions</option>
-            <option value="CREATE">Create</option>
-            <option value="UPDATE">Update</option>
-            <option value="DELETE">Delete</option>
-            <option value="LOGIN">Login</option>
+            <option value="Created">Created</option>
+            <option value="Updated">Updated</option>
+            <option value="Deleted">Deleted</option>
+            <option value="Archived">Archived</option>
+            <option value="Voided">Voided</option>
+            <option value="Restored">Restored</option>
+            <option value="Performed">Performed</option>
           </select>
         </div>
 
@@ -134,13 +122,13 @@ const AuditLogs = () => {
                         borderRadius: '12px',
                         fontSize: '0.8rem',
                         fontWeight: 600,
-                        background: log.action === 'CREATE' ? 'rgba(16, 185, 129, 0.15)' :
-                                    log.action === 'DELETE' ? 'rgba(239, 68, 68, 0.15)' :
-                                    log.action === 'UPDATE' ? 'rgba(245, 158, 11, 0.15)' :
+                        background: log.action === 'Created' ? 'rgba(16, 185, 129, 0.15)' :
+                                    log.action === 'Deleted' ? 'rgba(239, 68, 68, 0.15)' :
+                                    log.action === 'Updated' ? 'rgba(245, 158, 11, 0.15)' :
                                     'rgba(59, 130, 246, 0.15)',
-                        color: log.action === 'CREATE' ? '#34d399' :
-                               log.action === 'DELETE' ? '#f87171' :
-                               log.action === 'UPDATE' ? '#fbbf24' :
+                        color: log.action === 'Created' ? '#34d399' :
+                               log.action === 'Deleted' ? '#f87171' :
+                               log.action === 'Updated' ? '#fbbf24' :
                                '#60a5fa'
                       }}>
                         {log.action}

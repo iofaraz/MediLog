@@ -10,15 +10,15 @@ export function registerPatientHandlers() {
     return await PatientService.getPatientById(id);
   });
 
-  ipcMain.handle('patient:create', async (_event, data: unknown, userId: string) => {
-    return await PatientService.createPatient(data, userId);
+  ipcMain.handle('patient:create', async (_event, data: unknown) => {
+    return await PatientService.createPatient(data);
   });
 
-  ipcMain.handle('patient:update', async (_event, id: string, data: unknown, userId: string) => {
-    return await PatientService.updatePatient(id, data, userId);
+  ipcMain.handle('patient:update', async (_event, id: string, data: unknown) => {
+    return await PatientService.updatePatient(id, data);
   });
 
-  ipcMain.handle('patient:delete', async (_event, id: string, userId: string) => {
-    return await PatientService.deletePatient(id, userId);
+  ipcMain.handle('patient:delete', async (_event, id: string) => {
+    return await PatientService.deletePatient(id);
   });
 }

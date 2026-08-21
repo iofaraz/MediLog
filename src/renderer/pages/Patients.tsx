@@ -2,10 +2,10 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Search, Plus, User as UserIcon, Calendar, Edit2, Trash2, Download } from 'lucide-react';
 import PatientForm from '../components/patients/PatientForm';
-import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { SkeletonRow } from '../components/ui/Skeleton';
 import type { PatientFormData } from '../../shared/schemas';
+import { unwrapIpcResult } from '../lib/ipc';
 
 interface Patient {
   id: string;
@@ -17,7 +17,6 @@ interface Patient {
 }
 
 const Patients = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,7 +27,7 @@ const Patients = () => {
 
   const fetchPatients = useCallback(async () => {
     setIsLoading(true);
-    const result = await window.api.patient.getAll({ searchQuery, gender: genderFilter });
+    const result = unwrapIpcResult<Patient[]>(await window.api.patient.getAll({ searchQuery, gender: genderFilter }));
     if (result.success && result.data) {
       setPatients(result.data);
     }
@@ -60,19 +59,31 @@ const Patients = () => {
   }, [isFormOpen]);
 
   const handleSavePatient = async (data: PatientFormData) => {
-    let result;
-    const userId = user?.id || 'unknown';
-    if (editingPatient) {
-      result = await window.api.patient.update(editingPatient.id, data, userId);
-    } else {
-      result = await window.api.patient.create(data, userId);
-    }
+    const response = editingPatient
+      ? await window.api.patient.update(editingPatient.id, data)
+      : await window.api.patient.create(data);
+    const result = unwrapIpcResult<Patient>(response);
 
     if (result.success) {
-      toast.success(editingPatient ? 'Patient updated successfully' : 'Patient created successfully');
+      const savedPatient = result.data;
+
+      if (savedPatient) {
+        setPatients((current) => {
+          const next = current.filter((patient) => patient.id !== savedPatient.id);
+          const indexed = [savedPatient, ...next];
+          return indexed.sort((a, b) => {
+            const left = new Date((b as any).updatedAt ?? (b as any).createdAt ?? 0).getTime();
+            const right = new Date((a as any).updatedAt ?? (a as any).createdAt ?? 0).getTime();
+            return left - right;
+          });
+        });
+      }
+
+      fetchPatients();
+
+      toast.success(editingPatient ? 'Patient updated successfully' : 'Patient added successfully');
       setIsFormOpen(false);
       setEditingPatient(undefined);
-      fetchPatients();
     } else {
       toast.error(result.error || 'Failed to save patient');
     }
@@ -80,12 +91,13 @@ const Patients = () => {
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this patient? This action cannot be undone.')) {
-      const result = await window.api.patient.delete(id, user?.id || 'unknown');
-      if (result.success) {
-        toast.success('Patient deleted');
-        fetchPatients();
+      const result = await window.api.patient.delete(id);
+      const normalized = unwrapIpcResult(result);
+      if (normalized.success) {
+        toast.success('Patient deleted successfully');
+        setPatients((current) => current.filter((patient) => patient.id !== id));
       } else {
-        toast.error(result.error || 'Failed to delete patient');
+        toast.error(normalized.error || 'Failed to delete patient');
       }
     }
   };
@@ -134,20 +146,11 @@ const Patients = () => {
               setEditingPatient(undefined);
               setIsFormOpen(true);
             }}
-            style={{
-              padding: '12px 24px',
-              background: 'var(--accent-primary)',
-              color: 'white',
-              borderRadius: 'var(--radius-md)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontWeight: 600,
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-            }}
+            className="btn btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', boxShadow: 'none' }}
           >
             <Plus size={20} />
-            New Patient
+            Add Patient
           </button>
         </div>
       </div>
@@ -162,27 +165,15 @@ const Patients = () => {
               placeholder="Search patients..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px 12px 10px 40px',
-                background: 'rgba(15, 17, 23, 0.6)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-md)',
-                color: 'white'
-              }}
+              className="form-input"
+              style={{ paddingLeft: '40px' }}
             />
           </div>
           <select
             value={genderFilter}
             onChange={(e) => setGenderFilter(e.target.value)}
-            style={{
-              padding: '10px 16px',
-              background: 'rgba(15, 17, 23, 0.6)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              color: 'white',
-              cursor: 'pointer',
-            }}
+            className="form-input"
+            style={{ width: '180px' }}
           >
             <option value="All">All Genders</option>
             <option value="Male">Male</option>

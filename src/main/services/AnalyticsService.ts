@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { patients, visits, medications, auditLogs } from '../db/schema';
+import { patients, visits, auditLogs } from '../db/schema';
 import { sql, desc } from 'drizzle-orm';
 
 export class AnalyticsService {
@@ -8,7 +8,6 @@ export class AnalyticsService {
       // 1. Total counts
       const [patientsCount] = await db.select({ count: sql<number>`count(*)` }).from(patients);
       const [visitsCount] = await db.select({ count: sql<number>`count(*)` }).from(visits);
-      const [medsCount] = await db.select({ count: sql<number>`count(*)` }).from(medications);
 
       // 2. Patient Demographics (Gender Distribution)
       const demographicsRaw = await db.select({
@@ -67,7 +66,6 @@ export class AnalyticsService {
         data: {
           totalPatients: patientsCount.count,
           totalVisits: visitsCount.count,
-          totalMedications: medsCount.count,
           demographics,
           visitsByDate,
           recentActivity

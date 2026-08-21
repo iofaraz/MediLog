@@ -6,7 +6,7 @@ export function registerSettingsHandlers() {
     return await SettingsService.getAllSettings();
   });
 
-  ipcMain.handle('settings:update', async (_event, newSettings: Record<string, string>, userId: string) => {
-    return await SettingsService.updateSettings(newSettings, userId);
+  ipcMain.handle('settings:update', async (_event, newSettings: Record<string, string>) => {
+    return await SettingsService.updateSettings(newSettings);
   });
 }

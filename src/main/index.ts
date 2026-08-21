@@ -1,17 +1,17 @@
 import { app, BrowserWindow } from 'electron';
 import { join } from 'path';
-import { registerAuthHandlers } from './ipc/auth';
 import { registerDashboardHandlers } from './ipc/dashboard';
-import { registerMedicationHandlers } from './ipc/medication';
 import { registerPatientHandlers } from './ipc/patient';
 import { registerVisitHandlers } from './ipc/visit';
 import { registerAuditHandlers } from './ipc/audit';
 import { registerBackupHandlers } from './ipc/backup';
 import { registerSettingsHandlers } from './ipc/settings';
-import { registerUserHandlers } from './ipc/users';
 import { registerAnalyticsHandlers } from './ipc/analytics';
 import { registerExportHandlers } from './ipc/export';
-import { AuthService } from './services/AuthService';
+import { SettingsService } from './services/SettingsService';
+
+app.setName('MediLog');
+app.setAppUserModelId('com.medilog.app');
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -24,9 +24,9 @@ function createWindow() {
     frame: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
     },
   });
 
@@ -42,21 +42,16 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  // Register all IPC handlers before window creation
-  registerAuthHandlers();
   registerDashboardHandlers();
   registerPatientHandlers();
   registerVisitHandlers();
-  registerMedicationHandlers();
   registerAuditHandlers();
   registerBackupHandlers();
   registerSettingsHandlers();
-  registerUserHandlers();
   registerAnalyticsHandlers();
   registerExportHandlers();
 
-  // Setup default admin user if not present
-  await AuthService.setupDefaultAdmin();
+  await SettingsService.ensureDefaultSettings();
 
   createWindow();
 

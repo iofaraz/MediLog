@@ -1,10 +1,9 @@
+import { and, desc, eq, gte, lte } from 'drizzle-orm';
+import crypto from 'crypto';
 import { db } from '../db';
 import { auditLogs } from '../db/schema';
-import { desc, eq, and, gte, lte } from 'drizzle-orm';
-import crypto from 'crypto';
 
 interface LogOptions {
-  userId: string;
   action: string;
   entityType: string;
   entityId: string;
@@ -13,27 +12,26 @@ interface LogOptions {
 
 interface GetLogsOptions {
   entityType?: string;
-  userId?: string;
+  action?: string;
   startDate?: Date;
   endDate?: Date;
   limit?: number;
 }
 
 export class AuditService {
-  static async log(options: LogOptions) {
+  static log(options: LogOptions, executor: typeof db = db) {
     try {
-      await db.insert(auditLogs).values({
+      executor.insert(auditLogs).values({
         id: crypto.randomUUID(),
-        userId: options.userId,
         action: options.action,
         entityType: options.entityType,
         entityId: options.entityId,
         details: options.details || null,
         timestamp: new Date(),
-      });
+      }).run();
     } catch (error) {
-      // Audit log failures should never crash the main operation
       console.error('Failed to write audit log:', error);
+      throw error;
     }
   }
 
@@ -44,17 +42,22 @@ export class AuditService {
       if (options.entityType) {
         conditions.push(eq(auditLogs.entityType, options.entityType));
       }
-      if (options.userId) {
-        conditions.push(eq(auditLogs.userId, options.userId));
+
+      if (options.action) {
+        conditions.push(eq(auditLogs.action, options.action));
       }
+
       if (options.startDate) {
         conditions.push(gte(auditLogs.timestamp, options.startDate));
       }
+
       if (options.endDate) {
         conditions.push(lte(auditLogs.timestamp, options.endDate));
       }
 
-      const results = await db.select().from(auditLogs)
+      const results = await db
+        .select()
+        .from(auditLogs)
         .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(desc(auditLogs.timestamp))
         .limit(options.limit || 200);

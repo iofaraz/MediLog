@@ -1,53 +1,28 @@
-import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
 import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
 import PatientProfile from './pages/PatientProfile';
-import Medications from './pages/Medications';
-import LoginPage from './pages/LoginPage';
 import AuditLogs from './pages/AuditLogs';
 import Settings from './pages/Settings';
-import StaffManagement from './pages/StaffManagement';
 import Visits from './pages/Visits';
 import { Toaster } from 'react-hot-toast';
 import './index.css';
 
-// Guard: redirects to login if not authenticated
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f1117' }}>
-        <p style={{ color: '#64748b' }}>Loading...</p>
-      </div>
-    );
-  }
-
-  return user ? <>{children}</> : <Navigate to="/login" replace />;
-};
-
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
       <Route
         path="/"
         element={
-          <ProtectedRoute>
-            <AppLayout />
-          </ProtectedRoute>
+          <AppLayout />
         }
       >
         <Route index element={<Dashboard />} />
         <Route path="patients" element={<Patients />} />
         <Route path="patients/:id" element={<PatientProfile />} />
         <Route path="visits" element={<Visits />} />
-        <Route path="medications" element={<Medications />} />
         <Route path="audit" element={<AuditLogs />} />
-        <Route path="staff" element={<StaffManagement />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -58,31 +33,30 @@ function AppRoutes() {
 function App() {
   return (
     <HashRouter>
-      <AuthProvider>
-        <AppRoutes />
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            style: {
-              background: '#1e293b',
-              color: '#f8fafc',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+      <AppRoutes />
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          style: {
+            background: '#ffffff',
+            color: '#0f172a',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#ffffff',
             },
-            success: {
-              iconTheme: {
-                primary: '#10b981',
-                secondary: '#1e293b',
-              },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#ffffff',
             },
-            error: {
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#1e293b',
-              },
-            },
-          }}
-        />
-      </AuthProvider>
+          },
+        }}
+      />
     </HashRouter>
   );
 }

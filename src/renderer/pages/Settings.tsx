@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Database, Download, Upload, AlertTriangle, ShieldCheck, Building, Save } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect, type ChangeEvent } from 'react';
+import { Database, Download, Upload, AlertTriangle, ShieldCheck, Building, Save, Camera, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+const SETTINGS_UPDATED_EVENT = 'medilog:settings-updated';
+
 const Settings = () => {
-  const { user } = useAuth();
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -14,7 +14,9 @@ const Settings = () => {
     clinicName: '',
     clinicAddress: '',
     contactNumber: '',
-    contactEmail: ''
+    contactEmail: '',
+    doctorName: '',
+    profilePicture: ''
   });
 
   useEffect(() => {
@@ -30,17 +32,37 @@ const Settings = () => {
     fetchSettings();
   }, []);
 
+  const handleProfilePictureChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file');
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      setClinicSettings((current) => ({ ...current, profilePicture: result }));
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
   const handleBackup = async () => {
     setIsBackingUp(true);
     setMessage(null);
     try {
-      const result = await window.api.backup.create(user?.id || 'unknown');
+      const result = await window.api.backup.create();
       if (result.success) {
-        setMessage({ type: 'success', text: 'Backup created successfully!' });
+        setMessage({ type: 'success', text: result.message || 'Backup created successfully!' });
       } else if (result.error !== 'Backup cancelled.') {
         setMessage({ type: 'error', text: result.error || 'Failed to create backup' });
       }
-    } catch (_) {
+    } catch (error) {
+      console.error('Failed to create backup:', error);
       setMessage({ type: 'error', text: 'An unexpected error occurred' });
     }
     setIsBackingUp(false);
@@ -55,13 +77,13 @@ const Settings = () => {
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
               <button
                 onClick={() => { toast.dismiss(t.id); resolve(true); }}
-                style={{ background: '#ef4444', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer' }}
+                style={{ background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5', padding: '4px 12px', borderRadius: '8px', cursor: 'pointer' }}
               >
                 Restore
               </button>
               <button
                 onClick={() => { toast.dismiss(t.id); resolve(false); }}
-                style={{ background: '#374151', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer' }}
+                style={{ background: '#ffffff', color: '#334155', border: '1px solid #cbd5e1', padding: '4px 12px', borderRadius: '8px', cursor: 'pointer' }}
               >
                 Cancel
               </button>
@@ -76,11 +98,14 @@ const Settings = () => {
     setIsRestoring(true);
     setMessage(null);
     try {
-      const result = await window.api.backup.restore(user?.id || 'unknown');
+      const result = await window.api.backup.restore();
       if (!result.success && result.error !== 'Restore cancelled.') {
         setMessage({ type: 'error', text: result.error || 'Failed to restore backup' });
+      } else if (result.success) {
+        setMessage({ type: 'success', text: result.message || 'Restore completed. Restarting the app...' });
       }
-    } catch (_) {
+    } catch (error) {
+      console.error('Failed to restore backup:', error);
       setMessage({ type: 'error', text: 'An unexpected error occurred' });
     }
     setIsRestoring(false);
@@ -90,13 +115,15 @@ const Settings = () => {
     setIsSavingSettings(true);
     setMessage(null);
     try {
-      const result = await window.api.settings.update(clinicSettings, user?.id || 'unknown');
+      const result = await window.api.settings.update(clinicSettings);
       if (result.success) {
+        window.dispatchEvent(new CustomEvent<Record<string, string>>(SETTINGS_UPDATED_EVENT, { detail: result.data || clinicSettings }));
         setMessage({ type: 'success', text: 'Settings saved successfully!' });
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to save settings' });
       }
-    } catch (_) {
+    } catch (error) {
+      console.error('Failed to save settings:', error);
       setMessage({ type: 'error', text: 'An unexpected error occurred while saving settings' });
     }
     setIsSavingSettings(false);
@@ -133,23 +160,73 @@ const Settings = () => {
           <Building size={24} color="var(--primary-color)" />
           Clinic Information
         </h2>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: '24px', marginBottom: '24px', alignItems: 'start' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Profile Photo</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start' }}>
+              <div
+                style={{
+                  width: 120,
+                  height: 120,
+                  borderRadius: '50%',
+                  background: clinicSettings.profilePicture ? `url(${clinicSettings.profilePicture}) center/cover no-repeat` : '#e0e7ff',
+                  border: '1px solid #cbd5e1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563eb',
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                }}
+              >
+                {!clinicSettings.profilePicture && <Camera size={34} />}
+              </div>
+              <label className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <Upload size={16} />
+                Upload Photo
+                <input type="file" accept="image/*" onChange={handleProfilePictureChange} style={{ display: 'none' }} />
+              </label>
+              {clinicSettings.profilePicture && (
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setClinicSettings((current) => ({ ...current, profilePicture: '' }))}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <X size={16} />
+                  Remove Photo
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Clinic Name</label>
-            <input 
-              type="text" 
-              className="form-input" 
+            <input
+              type="text"
+              className="form-input"
               placeholder="e.g. City General Clinic"
               value={clinicSettings.clinicName}
               onChange={(e) => setClinicSettings({ ...clinicSettings, clinicName: e.target.value })}
             />
           </div>
           <div>
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Clinician Name</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="e.g. Primary Clinician"
+              value={clinicSettings.doctorName}
+              onChange={(e) => setClinicSettings({ ...clinicSettings, doctorName: e.target.value })}
+            />
+          </div>
+          <div>
             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Contact Number</label>
-            <input 
-              type="text" 
-              className="form-input" 
+            <input
+              type="text"
+              className="form-input"
               placeholder="e.g. +1 234 567 8900"
               value={clinicSettings.contactNumber}
               onChange={(e) => setClinicSettings({ ...clinicSettings, contactNumber: e.target.value })}
@@ -157,9 +234,9 @@ const Settings = () => {
           </div>
           <div style={{ gridColumn: '1 / -1' }}>
             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Clinic Address</label>
-            <input 
-              type="text" 
-              className="form-input" 
+            <input
+              type="text"
+              className="form-input"
               placeholder="Full address"
               value={clinicSettings.clinicAddress}
               onChange={(e) => setClinicSettings({ ...clinicSettings, clinicAddress: e.target.value })}
@@ -167,22 +244,23 @@ const Settings = () => {
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Contact Email</label>
-            <input 
-              type="email" 
-              className="form-input" 
+            <input
+              type="email"
+              className="form-input"
               placeholder="contact@clinic.com"
               value={clinicSettings.contactEmail}
               onChange={(e) => setClinicSettings({ ...clinicSettings, contactEmail: e.target.value })}
             />
           </div>
+          </div>
         </div>
 
-        <button 
-          onClick={handleSaveSettings}
-          disabled={isSavingSettings}
-          className="btn btn-primary"
-          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-        >
+          <button
+            onClick={handleSaveSettings}
+            disabled={isSavingSettings}
+            className="btn btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
           <Save size={18} />
           {isSavingSettings ? 'Saving...' : 'Save Settings'}
         </button>
@@ -194,20 +272,20 @@ const Settings = () => {
           <Database size={24} color="var(--primary-color)" />
           Database Management
         </h2>
-        
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
           {/* Backup Section */}
-          <div style={{ 
-            padding: '24px', 
-            background: 'rgba(15, 17, 23, 0.4)', 
+          <div style={{
+            padding: '24px',
+            background: '#f8fafc',
             borderRadius: '12px',
-            border: '1px solid var(--border-subtle)'
+            border: '1px solid #e2e8f0'
           }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '12px', color: 'var(--text-primary)' }}>Create Backup</h3>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem', lineHeight: 1.5 }}>
               Save a secure snapshot of the entire MediLog database to an external location like a USB drive or secure folder.
             </p>
-            <button 
+            <button
               onClick={handleBackup}
               disabled={isBackingUp || isRestoring}
               className="btn btn-primary"
@@ -219,36 +297,21 @@ const Settings = () => {
           </div>
 
           {/* Restore Section */}
-          <div style={{ 
-            padding: '24px', 
-            background: 'rgba(239, 68, 68, 0.05)', 
+          <div style={{
+            padding: '24px',
+            background: '#fff1f2',
             borderRadius: '12px',
-            border: '1px solid rgba(239, 68, 68, 0.1)'
+            border: '1px solid #fecdd3'
           }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '12px', color: '#fca5a5' }}>Restore Backup</h3>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem', lineHeight: 1.5 }}>
               Restore the database from a previously saved backup file. <strong style={{ color: '#f87171' }}>Warning: This will overwrite all current data.</strong>
             </p>
-            <button 
+            <button
               onClick={handleRestore}
               disabled={isBackingUp || isRestoring}
-              style={{ 
-                width: '100%', 
-                padding: '10px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                gap: '8px',
-                background: '#ef4444',
-                color: 'white',
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#dc2626'}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#ef4444'}
+              className="btn btn-danger"
+              style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
             >
               <Upload size={18} />
               {isRestoring ? 'Restoring...' : 'Restore Backup'}

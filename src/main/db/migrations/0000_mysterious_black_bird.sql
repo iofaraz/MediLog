@@ -27,7 +27,7 @@ CREATE TABLE `prescriptions` (
 	`frequency` text NOT NULL,
 	`duration` text NOT NULL,
 	`notes` text,
-	FOREIGN KEY (`visit_id`) REFERENCES `visits`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`visit_id`) REFERENCES `visits`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `settings` (
